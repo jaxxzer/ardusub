@@ -60,6 +60,8 @@ Build.APMrover2/*
 Build.AntennaTracker/*
 Build.ArduCopter/*
 Build.ArduPlane/*
+Build.ArduSub/*
+cmake_install.cmake
 CMakeCache.txt
 CMakeFiles
 LASTLOG.TXT
