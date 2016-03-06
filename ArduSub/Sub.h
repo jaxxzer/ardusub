@@ -780,6 +780,16 @@ private:
     bool throw_attitude_good();
     bool throw_height_good();
 
+    // Dive to specific depth
+    bool dive_init(bool ignore_checks);
+    void dive_do_not_use_GPS();
+    void dive_gps_run();
+    void dive_nogps_run();
+    void dive_run();
+    bool diving_with_GPS();
+    float get_dive_descent_speed();
+    void set_mode_dive_with_pause();
+
     bool rtl_init(bool ignore_checks);
     void rtl_run();
     void rtl_climb_start();
