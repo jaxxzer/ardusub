@@ -156,20 +156,24 @@ void Sub::land_nogps_run()
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
     }
 
+    //ToDo SUB: remove these checks, except ap.at_surface
+
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    if(!ap.auto_armed || ap.at_surface || !motors.get_interlock()) {
     	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
 #if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
-            init_disarm_motors();
+        if (ap.at_surface && (ap.throttle_zero || failsafe.radio)) {
+            //init_disarm_motors();
+        	set_mode(ALT_HOLD)
         }
 #else
         // disarm when the landing detector says we've landed
-        if (ap.land_complete) {
-            init_disarm_motors();
+        if (ap.at_surface) {
+            //init_disarm_motors();
+        	set_mode(ALT_HOLD);
         }
 #endif
         return;
