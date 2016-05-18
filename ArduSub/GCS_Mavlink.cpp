@@ -82,9 +82,6 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-	uint8_t mav_type;
-    mav_type = MAV_TYPE_SUBMARINE;
-
     gcs[chan-MAVLINK_COMM_0].send_heartbeat(mav_type,
                                             base_mode,
                                             custom_mode,
