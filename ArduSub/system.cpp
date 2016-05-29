@@ -81,6 +81,11 @@ static void failsafe_check_static()
     sub.failsafe_check();
 }
 
+static void mavlink_snoop_static(const mavlink_message_t* msg)
+{
+    sub.mavlink_snoop(msg);
+}
+
 void Sub::init_ardupilot()
 {
     if (!hal.gpio->usb_connected()) {
@@ -141,15 +146,19 @@ void Sub::init_ardupilot()
 
     // init the GCS connected to the console
     gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
+    gcs[0].set_snoop(mavlink_snoop_static);
 
     // init telemetry port
     gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs[1].set_snoop(mavlink_snoop_static);
 
     // setup serial port for telem2
     gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
+    gcs[2].set_snoop(mavlink_snoop_static);
 
     // setup serial port for fourth telemetry port (not used by default)
     gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
+    gcs[3].set_snoop(mavlink_snoop_static);
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky

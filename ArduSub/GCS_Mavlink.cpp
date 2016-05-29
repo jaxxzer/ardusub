@@ -2122,6 +2122,36 @@ void Sub::gcs_data_stream_send(void)
 }
 
 /*
+  We eavesdrop on MAVLINK_MSG_ID_GLOBAL_POSITION_INT and
+  MAVLINK_MSG_ID_SCALED_PRESSUREs
+*/
+void Sub::mavlink_snoop(const mavlink_message_t* msg)
+{
+    // return immediately if sysid doesn't match our target sysid
+//    if ((g.sysid_target != 0) && (g.sysid_target != msg->sysid)) {
+//        return;
+//    }
+
+    switch (msg->msgid) {
+
+    case MAVLINK_MSG_ID_HEARTBEAT:
+    {
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "HBHB!: %d %d", msg->sysid, msg->compid);
+        break;
+    }
+
+    case MAVLINK_MSG_ID_BATTERY_STATUS:
+    {
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "BAT! %d %d", msg->sysid, msg->compid);
+        break;
+    }
+
+    default:
+    	break;
+    }
+}
+
+/*
  *  look for incoming commands on the GCS links
  */
 void Sub::gcs_check_input(void)

@@ -1034,6 +1034,8 @@ private:
 
 public:
     void mavlink_delay_cb();
+    void mavlink_snoop(const mavlink_message_t* msg);
+
     void failsafe_check();
     int8_t dump_log(uint8_t argc, const Menu::arg *argv);
     int8_t erase_logs(uint8_t argc, const Menu::arg *argv);
