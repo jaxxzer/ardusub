@@ -2139,12 +2139,14 @@ void Sub::mavlink_snoop(const mavlink_message_t* msg)
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "HBHB!: %d %d", msg->sysid, msg->compid);
         break;
     }
+    break;
 
     case MAVLINK_MSG_ID_BATTERY_STATUS:
     {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "BAT! %d %d", msg->sysid, msg->compid);
-        break;
+
     }
+    break;
+
 
     default:
     	break;
