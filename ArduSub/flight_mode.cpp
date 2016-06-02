@@ -55,24 +55,8 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
             success = guided_init(ignore_checks);
             break;
 
-        case LAND:
-            success = land_init(ignore_checks);
-            break;
-
         case RTL:
             success = rtl_init(ignore_checks);
-            break;
-
-        case DRIFT:
-            success = drift_init(ignore_checks);
-            break;
-
-        case SPORT:
-            success = sport_init(ignore_checks);
-            break;
-
-        case FLIP:
-            success = flip_init(ignore_checks);
             break;
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -90,10 +74,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         case BRAKE:
             success = brake_init(ignore_checks);
             break;
-
-        case THROW:
-        	success = throw_init(ignore_checks);
-        	break;
 
         default:
             success = false;
@@ -168,24 +148,8 @@ void Sub::update_flight_mode()
             guided_run();
             break;
 
-        case LAND:
-            land_run();
-            break;
-
         case RTL:
             rtl_run();
-            break;
-
-        case DRIFT:
-            drift_run();
-            break;
-
-        case SPORT:
-            sport_run();
-            break;
-
-        case FLIP:
-            flip_run();
             break;
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -204,9 +168,6 @@ void Sub::update_flight_mode()
             brake_run();
             break;
 
-        case THROW:
-        	throw_run();
-        	break;
         default:
         	break;
     }
@@ -231,10 +192,6 @@ void Sub::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_
 #endif  // MOUNT == ENABLED
     }
 
-    if (old_control_mode == THROW) {
-    	throw_exit();
-    }
-
     // smooth throttle transition when switching from manual to automatic flight modes
     if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors.armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
@@ -253,10 +210,8 @@ bool Sub::mode_requires_GPS(control_mode_t mode) {
         case LOITER:
         case RTL:
         case CIRCLE:
-        case DRIFT:
         case POSHOLD:
         case BRAKE:
-        case THROW:
             return true;
         default:
             return false;
@@ -281,7 +236,7 @@ bool Sub::mode_has_manual_throttle(control_mode_t mode) {
 // mode_allows_arming - returns true if vehicle can be armed in the specified mode
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
 bool Sub::mode_allows_arming(control_mode_t mode, bool arming_from_gcs) {
-	if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && mode == GUIDED)) {
+	if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || (arming_from_gcs && mode == GUIDED)) {
         return true;
     }
     return false;
@@ -294,7 +249,8 @@ void Sub::notify_flight_mode(control_mode_t mode) {
         case GUIDED:
         case RTL:
         case CIRCLE:
-        case LAND:
+        case SURFACE:
+        case DIVE:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
             break;
@@ -335,21 +291,6 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case CIRCLE:
         port->print("CIRCLE");
         break;
-    case LAND:
-        port->print("LAND");
-        break;
-    case OF_LOITER:
-        port->print("OF_LOITER");
-        break;
-    case DRIFT:
-        port->print("DRIFT");
-        break;
-    case SPORT:
-        port->print("SPORT");
-        break;
-    case FLIP:
-        port->print("FLIP");
-        break;
     case AUTOTUNE:
         port->print("AUTOTUNE");
         break;
@@ -359,8 +300,11 @@ void Sub::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case BRAKE:
         port->print("BRAKE");
         break;
-    case THROW:
-        port->print("THROW");
+    case SURFACE:
+        port->print("SURFACE");
+        break;
+    case DIVE:
+        port->print("DIVE");
         break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);

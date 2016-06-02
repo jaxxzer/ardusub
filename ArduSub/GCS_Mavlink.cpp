@@ -166,15 +166,10 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     case LOITER:
     case RTL:
     case CIRCLE:
-    case LAND:
-    case OF_LOITER:
     case POSHOLD:
     case BRAKE:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
-        break;
-    case SPORT:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:
     	break;
@@ -1213,9 +1208,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_NAV_LAND:
-            if (sub.set_mode(LAND, MODE_REASON_GCS_COMMAND)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
             break;
 
         case MAV_CMD_CONDITION_YAW:
@@ -1592,24 +1584,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 		/* Solo user holds down Fly button for a couple of seconds */
 		case MAV_CMD_SOLO_BTN_FLY_HOLD: {
-			result = MAV_RESULT_ACCEPTED;
-
-			if (sub.failsafe.radio) {
-				break;
-			}
-
-			if (!sub.motors.armed()) {
-				// if disarmed, arm motors
-				sub.init_arm_motors(true);
-			} else if (sub.ap.land_complete) {
-				// if armed and landed, takeoff
-				if (sub.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
-					sub.do_user_takeoff(packet.param1*100, true);
-				}
-			} else {
-				// if flying, land
-				sub.set_mode(LAND, MODE_REASON_GCS_COMMAND);
-			}
 			break;
 		}
 

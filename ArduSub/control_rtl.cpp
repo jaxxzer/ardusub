@@ -105,7 +105,7 @@ void Sub::rtl_climb_start()
     if (!wp_nav.set_wp_destination(rtl_path.climb_target)) {
         // this should not happen because rtl_build_path will have checked terrain data was available
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-        set_mode(LAND, MODE_REASON_TERRAIN_FAILSAFE);
+        //set_mode(LAND, MODE_REASON_TERRAIN_FAILSAFE);
         return;
     }
     wp_nav.set_fast_waypoint(true);

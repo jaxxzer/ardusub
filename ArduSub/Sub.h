@@ -82,7 +82,6 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
-#include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
@@ -530,9 +529,6 @@ private:
     AP_Parachute parachute;
 #endif
 
-    // Landing Gear Controller
-    AP_LandingGear landinggear;
-
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     AP_Terrain terrain;
@@ -877,7 +873,6 @@ private:
 #if GNDEFFECT_COMPENSATION == ENABLED
     void update_ground_effect_detector(void);
 #endif // GNDEFFECT_COMPENSATION == ENABLED
-    void landinggear_update();
     void update_notify();
     void motor_test_output();
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc);

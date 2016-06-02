@@ -18,11 +18,11 @@ void Sub::failsafe_radio_on_event()
     } else {
         if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
             // continue mission
-        } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
-            // continue landing
+        } else if (control_mode == SURFACE && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
+            // continue surfacing
         } else {
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+                //set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             } else {
                 set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             }
@@ -59,7 +59,7 @@ void Sub::failsafe_battery_event(void)
 			if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
 				set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
 			} else {
-				set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+				//set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
 			}
 		}
 	}
@@ -186,7 +186,7 @@ void Sub::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
     // attempt to switch to RTL, if this fails then switch to Land
     if (!set_mode(RTL, reason)) {
         // set mode to land will trigger mode change notification to pilot
-        set_mode_land_with_pause(reason);
+        //set_mode_land_with_pause(reason);
     } else {
         // alert pilot to mode change
         AP_Notify::events.failsafe_mode_change = 1;

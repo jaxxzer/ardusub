@@ -255,12 +255,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
 
     switch(ch_function) {
-        case AUXSW_FLIP:
-            // flip if switch is on, positive throttle and we're actually flying
-            if(ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(FLIP, MODE_REASON_TX_COMMAND);
-            }
-            break;
 
         case AUXSW_SIMPLE_MODE:
             // low = simple mode off, middle or high position turns simple mode on
@@ -452,17 +446,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 #endif
 
-        case AUXSW_LAND:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(LAND, MODE_REASON_TX_COMMAND);
-            }else{
-                // return to flight mode switch's flight mode if we are currently in LAND
-                if (control_mode == LAND) {
-                    reset_control_switch();
-                }
-            }
-            break;
-
 #if PARACHUTE == ENABLED
         case AUXSW_PARACHUTE_ENABLE:
             // Parachute enable/disable
@@ -527,20 +510,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
             break;
 
-        case AUXSW_LANDING_GEAR:
-            switch (ch_flag) {
-                case AUX_SWITCH_LOW:
-                    landinggear.set_cmd_mode(LandingGear_Deploy);
-                    break;
-                case AUX_SWITCH_MIDDLE:
-                    landinggear.set_cmd_mode(LandingGear_Auto);
-                    break;
-                case AUX_SWITCH_HIGH:
-                    landinggear.set_cmd_mode(LandingGear_Retract);
-                    break;
-            }
-            break;
-
         case AUXSW_LOST_COPTER_SOUND:
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
@@ -585,17 +554,6 @@ void Sub::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 
-        case AUXSW_THROW:
-            // throw flight mode
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(THROW, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in throw mode
-                if (control_mode == THROW) {
-                    reset_control_switch();
-                }
-            }
-            break;
     }
 }
 

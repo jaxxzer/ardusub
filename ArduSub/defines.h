@@ -70,8 +70,7 @@ enum aux_sw_func {
     AUXSW_BRAKE =               33, // Brake flight mode
 	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
     AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
-    AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
-    AUXSW_THROW =               37  // change to THROW flight mode
+    AUXSW_RELAY4 =              36 // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
 };
 
 // Frame types
@@ -96,23 +95,21 @@ enum aux_sw_func {
 
 // Auto Pilot Modes enumeration
 enum control_mode_t {
-    STABILIZE =     0,  // manual airframe angle with manual throttle
-    ACRO =          1,  // manual body-frame angular rate with manual throttle
-    ALT_HOLD =      2,  // manual airframe angle with automatic throttle
-    AUTO =          3,  // fully automatic waypoint control using mission commands
-    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    LOITER =        5,  // automatic horizontal acceleration with automatic throttle
-    RTL =           6,  // automatic return to launching point
-    CIRCLE =        7,  // automatic circular flight with automatic throttle
-    LAND =          9,  // automatic landing with horizontal position control
-    OF_LOITER =    10,  // deprecated
-    DRIFT =        11,  // semi-automous position, yaw and throttle control
-    SPORT =        13,  // manual earth-frame angular rate control with manual throttle
-    FLIP =         14,  // automatically flip the vehicle on the roll axis
-    AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
-    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
-	THROW =        18   // throw to launch mode using inertial/GPS system, no pilot input
+
+	MANUAL =        0,
+    STABILIZE =     1,  // manual airframe angle with manual throttle
+    ACRO =          2,  // manual body-frame angular rate with manual throttle
+    ALT_HOLD =      3,  // manual airframe angle with automatic throttle
+	SURFACE = 		4,  // climb to surface, and stay there
+	DIVE = 			5,  // dive to preset depth
+	POSHOLD =       6,  // automatic position hold with manual override, with automatic throttle
+    AUTO =          7,  // fully automatic waypoint control using mission commands
+    GUIDED =        8,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    LOITER =        9,  // automatic horizontal acceleration with automatic throttle
+    RTL =           10, // automatic return to launching point
+    CIRCLE =        11, // automatic circular flight with automatic throttle
+    AUTOTUNE =      12, // automatically tune the vehicle's roll and pitch gains
+    BRAKE =         13  // full-brake using inertial/GPS system, no pilot input
 };
 
 enum mode_reason_t {

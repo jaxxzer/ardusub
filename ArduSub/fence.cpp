@@ -38,11 +38,11 @@ void Sub::fence_check()
                 // if we are within 100m of the fence, RTL
                 if (fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
                     if (!set_mode(RTL, MODE_REASON_FENCE_BREACH)) {
-                        set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                        set_mode(SURFACE, MODE_REASON_FENCE_BREACH);
                     }
                 }else{
                     // if more than 100m outside the fence just force a land
-                    set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                    set_mode(SURFACE, MODE_REASON_FENCE_BREACH);
                 }
             }
         }

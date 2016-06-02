@@ -118,7 +118,7 @@ void Sub::update_using_interlock()
 {
     // check if we are using motor interlock control on an aux switch or are in throw mode
     // which uses the interlock to stop motors while the copter is being thrown
-    ap.using_interlock = check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) || (control_mode == THROW);
+    ap.using_interlock = check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK);
 }
 
 void Sub::set_motor_emergency_stop(bool b)

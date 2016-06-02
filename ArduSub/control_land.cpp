@@ -256,16 +256,16 @@ void Sub::land_do_not_use_GPS()
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
-void Sub::set_mode_land_with_pause(mode_reason_t reason)
-{
-    set_mode(LAND, reason);
-    land_pause = true;
+//void Sub::set_mode_land_with_pause(mode_reason_t reason)
+//{
+//    set_mode(LAND, reason);
+//    land_pause = true;
+//
+//    // alert pilot to mode change
+//    AP_Notify::events.failsafe_mode_change = 1;
+//}
 
-    // alert pilot to mode change
-    AP_Notify::events.failsafe_mode_change = 1;
-}
-
-// landing_with_GPS - returns true if vehicle is landing using GPS
-bool Sub::landing_with_GPS() {
-    return (control_mode == LAND && land_with_gps);
-}
+//// landing_with_GPS - returns true if vehicle is landing using GPS
+//bool Sub::landing_with_GPS() {
+//    return (control_mode == LAND && land_with_gps);
+//}
