@@ -2,17 +2,17 @@
 
 #include "Sub.h"
 
-static bool land_with_gps;
+static bool surface_with_gps;
 
-static uint32_t land_start_time;
-static bool land_pause;
+static uint32_t surface_start_time;
+static bool surface_pause;
 
 // land_init - initialise land controller
-bool Sub::land_init(bool ignore_checks)
+bool Sub::surface_init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
-    land_with_gps = position_ok();
-    if (land_with_gps) {
+    surface_with_gps = position_ok();
+    if (surface_with_gps) {
         // set target to stopping point
         Vector3f stopping_point;
         wp_nav.get_loiter_stopping_point_xy(stopping_point);
@@ -26,54 +26,49 @@ bool Sub::land_init(bool ignore_checks)
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
 
-    land_start_time = millis();
+    surface_start_time = millis();
 
-    land_pause = false;
+    surface_pause = false;
 
-    // reset flag indicating if pilot has applied roll or pitch inputs during landing
-    ap.land_repo_active = false;
+    // reset flag indicating if pilot has applied roll or pitch inputs during surfaceing
+    ap.surface_repo_active = false;
 
     return true;
 }
 
-// land_run - runs the land controller
+// surface_run - runs the surface controller
 // should be called at 100hz or more
-void Sub::land_run()
+void Sub::surface_run()
 {
-    if (land_with_gps) {
-        land_gps_run();
+    if (surface_with_gps) {
+        surface_gps_run();
     }else{
-        land_nogps_run();
+        surface_nogps_run();
     }
 }
 
-// land_run - runs the land controller
+// surface_run - runs the surface controller
 //      horizontal position controlled with loiter controller
 //      should be called at 100hz or more
-void Sub::land_gps_run()
+void Sub::surface_gps_run()
 {
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
 
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    // if not auto armed or surfaced or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors.armed() || !ap.auto_armed || ap.surfaced || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     	// multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
         wp_nav.init_loiter_target();
 
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-        // disarm when the landing detector says we've landed and throttle is at minimum
-        if (ap.land_complete && (ap.throttle_zero || failsafe.radio)) {
-            init_disarm_motors();
-        }
-#else
+
         // disarm when the landing detector says we've landed
-        if (ap.land_complete) {
+        if (ap.surfaced) {
             init_disarm_motors();
         }
-#endif
+
         return;
     }
 
@@ -146,10 +141,10 @@ void Sub::land_gps_run()
     pos_control.update_z_controller();
 }
 
-// land_nogps_run - runs the land controller
+// surface_nogps_run - runs the land controller
 //      pilot controls roll and pitch angles
 //      should be called at 100hz or more
-void Sub::land_nogps_run()
+void Sub::surface_nogps_run()
 {
     float target_roll = 0.0f, target_pitch = 0.0f;
     float target_yaw_rate = 0;
@@ -214,7 +209,7 @@ void Sub::land_nogps_run()
 // get_land_descent_speed - high level landing logic
 //      returns climb rate (in cm/s) which should be passed to the position controller
 //      should be called at 100hz or higher
-float Sub::get_land_descent_speed()
+float Sub::get_surface_ascent_speed()
 {
 #if RANGEFINDER_ENABLED == ENABLED
 	bool rangefinder_ok = rangefinder_state.enabled && rangefinder_state.alt_healthy;
@@ -249,9 +244,9 @@ float Sub::get_land_descent_speed()
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
 //  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
 //  has no effect if we are not already in LAND mode
-void Sub::land_do_not_use_GPS()
+void Sub::surface_do_not_use_GPS()
 {
-    land_with_gps = false;
+    surface_with_gps = false;
 }
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
