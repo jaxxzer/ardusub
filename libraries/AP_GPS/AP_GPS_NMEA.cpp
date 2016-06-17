@@ -134,26 +134,27 @@ void AP_GPS_NMEA::inject_data(uint8_t *data, uint8_t len)
 
 bool AP_GPS_NMEA::read(void)
 {
-    int16_t numc;
-    bool parsed = false;
-
-    numc = port->available();
-    while (numc--) {
-        char c = port->read();
-#ifdef NMEA_LOG_PATH
-        static FILE *logf = NULL;
-        if (logf == NULL) {
-            logf = fopen(NMEA_LOG_PATH, "wb");
-        }
-        if (logf != NULL) {
-            ::fwrite(&c, 1, 1, logf);
-        }
-#endif
-        if (_decode(c)) {
-            parsed = true;
-        }
-    }
-    return parsed;
+	return true;
+//    int16_t numc;
+//    bool parsed = false;
+//
+//    numc = port->available();
+//    while (numc--) {
+//        char c = port->read();
+//#ifdef NMEA_LOG_PATH
+//        static FILE *logf = NULL;
+//        if (logf == NULL) {
+//            logf = fopen(NMEA_LOG_PATH, "wb");
+//        }
+//        if (logf != NULL) {
+//            ::fwrite(&c, 1, 1, logf);
+//        }
+//#endif
+//        if (_decode(c)) {
+//            parsed = true;
+//        }
+//    }
+//    return parsed;
 }
 
 bool AP_GPS_NMEA::_decode(char c)
