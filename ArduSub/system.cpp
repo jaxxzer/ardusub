@@ -259,14 +259,13 @@ void Sub::init_ardupilot()
 		barometer.set_primary_baro(0); // Set the primary baro to default board baro !!Changes and saves parameter value!!
 
 		ap.depth_sensor_present = false;
+
 		for(int i = 1; i < barometer.num_instances(); i++) {
 			barometer.set_type(i, BARO_TYPE_AIR); // Default fcu air baro
 			barometer.set_precision_multiplier(i, 1); // Use default valuse
 		}
 		EKF.set_baro_alt_noise(10.0f); // Readings won't correspond with rest of INS
 		EKF2.set_baro_alt_noise(10.0f);
-
-
 	}
 
 	// read Baro pressure at ground

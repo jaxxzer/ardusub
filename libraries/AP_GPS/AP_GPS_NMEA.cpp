@@ -110,6 +110,28 @@ AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     memset(_term, 0, sizeof(_term));
 }
 
+void AP_GPS_NMEA::inject_data(uint8_t *data, uint8_t len)
+{
+
+
+    for(int i = 0; i < len; i++) {
+        char c = data[i];
+//#ifdef NMEA_LOG_PATH
+//        static FILE *logf = NULL;
+//        if (logf == NULL) {
+//            logf = fopen(NMEA_LOG_PATH, "wb");
+//        }
+//        if (logf != NULL) {
+//            ::fwrite(&c, 1, 1, logf);
+//        }
+//#endif
+        if (_decode(c)) {
+            //parsed = true;
+        }
+    }
+    //return parsed;
+}
+
 bool AP_GPS_NMEA::read(void)
 {
     int16_t numc;

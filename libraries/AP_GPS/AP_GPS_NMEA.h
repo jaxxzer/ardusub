@@ -61,6 +61,8 @@ public:
     /// accordingly.
     bool        read();
 
+    void inject_data(uint8_t *data, uint8_t len);
+
 	static bool _detect(struct NMEA_detect_state &state, uint8_t data);
 
 private:

@@ -329,8 +329,10 @@ AP_GPS::detect_instance(uint8_t instance)
 				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
 			}
 		}
-	}
 
+	}
+    _broadcast_gps_type("NMEA", instance, dstate->last_baud);
+    new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 found_gps:
 #endif
