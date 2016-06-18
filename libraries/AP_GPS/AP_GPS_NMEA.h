@@ -65,6 +65,8 @@ public:
 
 	static bool _detect(struct NMEA_detect_state &state, uint8_t data);
 
+
+
 private:
     /// Coding for the GPS sentences that the parser handles
     enum _sentence_types {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
@@ -73,6 +75,12 @@ private:
         _GPS_SENTENCE_VTG = 96,
         _GPS_SENTENCE_OTHER = 0
     };
+
+    bool _parsed;
+    uint32_t _last_message_time_ms;
+    bool _new_data;
+
+
 
     /// Update the decode state machine with a new character
     ///

@@ -227,7 +227,15 @@ AP_GPS::detect_instance(uint8_t instance)
         goto found_gps;
     }
 #endif
-    
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    if(drivers[instance] == NULL) {
+    	_broadcast_gps_type("NMEA", instance, -1); //baud rate isn't valid
+    	new_gps = new AP_GPS_NMEA(*this, state[instance], NULL); //does not require real UART, sentences come over mavlink
+    }
+    goto found_gps;
+#endif
+
     if (_port[instance] == NULL) {
         // UART not available
         return;
@@ -331,8 +339,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		}
 
 	}
-    _broadcast_gps_type("NMEA", instance, dstate->last_baud);
-    new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 found_gps:
 #endif
@@ -401,8 +408,10 @@ AP_GPS::update_instance(uint8_t instance)
         if (tnow - timing[instance].last_message_time_ms > 2000) {
             // free the driver before we run the next detection, so we
             // don't end up with two allocated at any time
-            delete drivers[instance];
-            drivers[instance] = NULL;
+        	if (_type[instance] != GPS_TYPE_NMEA) {
+				delete drivers[instance];
+				drivers[instance] = NULL;
+        	}
             memset(&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
             state[instance].status = NO_GPS;
