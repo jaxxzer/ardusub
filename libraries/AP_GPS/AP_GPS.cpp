@@ -33,6 +33,7 @@
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
+#include "AP_GPS_MAVLINK.h"
 #include "GPS_Backend.h"
 
 extern const AP_HAL::HAL &hal;
@@ -228,16 +229,20 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 #endif
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    if(drivers[instance] == NULL) {
-    	_broadcast_gps_type("NMEA", instance, -1); //baud rate isn't valid
-    	new_gps = new AP_GPS_NMEA(*this, state[instance], NULL); //does not require real UART, sentences come over mavlink
+
+    if(_type[instance] == GPS_TYPE_MAVLINK) {
+		// check for if user selected MAVLINK GPS
+		// Also not possible to autodetect, and does not require a UART
+		//_broadcast_gps_type("MAVLINK", instance, -1); //baud rate isn't valid
+		drivers[instance] = new AP_GPS_MAVLINK(*this, state[instance]); //does not require a UART, sentences come from GCS via mavlink
+    	state[instance].instance = instance;
+    	state[instance].status = NO_FIX;
+    	state[instance].hdop = 9999;
+    	timing[instance].last_message_time_ms = now;
+    	return;
     }
-    goto found_gps;
-#endif
 
     if (_port[instance] == NULL) {
-        // UART not available
         return;
     }
 
@@ -337,7 +342,6 @@ AP_GPS::detect_instance(uint8_t instance)
 				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
 			}
 		}
-
 	}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_QURT
@@ -408,10 +412,8 @@ AP_GPS::update_instance(uint8_t instance)
         if (tnow - timing[instance].last_message_time_ms > 2000) {
             // free the driver before we run the next detection, so we
             // don't end up with two allocated at any time
-        	if (_type[instance] != GPS_TYPE_NMEA) {
-				delete drivers[instance];
-				drivers[instance] = NULL;
-        	}
+			delete drivers[instance];
+			drivers[instance] = NULL;
             memset(&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
             state[instance].status = NO_GPS;

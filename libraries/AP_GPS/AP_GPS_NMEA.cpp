@@ -103,70 +103,35 @@ AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     _sentence_type(0),
     _term_number(0),
     _term_offset(0),
-    _gps_data_good(false),
-	_parsed(false),
-	_last_message_time_ms(0),
-	_new_data(false)
+    _gps_data_good(false)
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
     // this guarantees that _term is always nul terminated
     memset(_term, 0, sizeof(_term));
 }
 
-void AP_GPS_NMEA::inject_data(uint8_t *data, uint8_t len)
-{
-
-
-
-    for(int i = 0; i < len; i++) {
-        char c = data[i];
-//#ifdef NMEA_LOG_PATH
-//        static FILE *logf = NULL;
-//        if (logf == NULL) {
-//            logf = fopen(NMEA_LOG_PATH, "wb");
-//        }
-//        if (logf != NULL) {
-//            ::fwrite(&c, 1, 1, logf);
-//        }
-//#endif
-        if (_decode(c)) {
-            _last_message_time_ms = AP_HAL::millis();
-            _new_data = true;
-        }
-    }
-    //return parsed;
-}
-
 bool AP_GPS_NMEA::read(void)
 {
-	if(_new_data == true) {
-		//return AP_HAL::millis() - _last_message_time_ms < 50;
-		_new_data = false;
-		return true;
-	} else {
-		return false;
-	}
+    int16_t numc;
+    bool parsed = false;
 
-//    int16_t numc;
-//    bool parsed = false;
-//
-//    numc = port->available();
-//    while (numc--) {
-//        char c = port->read();
-//#ifdef NMEA_LOG_PATH
-//        static FILE *logf = NULL;
-//        if (logf == NULL) {
-//            logf = fopen(NMEA_LOG_PATH, "wb");
-//        }
-//        if (logf != NULL) {
-//            ::fwrite(&c, 1, 1, logf);
-//        }
-//#endif
-//        if (_decode(c)) {
-//            parsed = true;
-//        }
-//    }
-//    return parsed;
+    numc = port->available();
+    while (numc--) {
+        char c = port->read();
+#ifdef NMEA_LOG_PATH
+        static FILE *logf = NULL;
+        if (logf == NULL) {
+            logf = fopen(NMEA_LOG_PATH, "wb");
+        }
+        if (logf != NULL) {
+            ::fwrite(&c, 1, 1, logf);
+        }
+#endif
+        if (_decode(c)) {
+            parsed = true;
+        }
+    }
+    return parsed;
 }
 
 bool AP_GPS_NMEA::_decode(char c)
