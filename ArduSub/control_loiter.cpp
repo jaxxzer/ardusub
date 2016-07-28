@@ -127,12 +127,12 @@ void Sub::loiter_run()
 	// rotate pilot desired velocities to earth-frame
 
 	// forward only
-//	des_vely = des_velf * ahrs.sin_yaw(); // +East / -West
-//	des_velx = des_velf * ahrs.cos_yaw(); // +North / -South
+	des_vely = des_velf * ahrs.sin_yaw(); // +East / -West
+	des_velx = des_velf * ahrs.cos_yaw(); // +North / -South
 
 	// lateral only
-	des_vely = des_velr * ahrs.cos_yaw(); // +East / -West
-	des_velx = des_velr * -ahrs.sin_yaw(); // +North / -South
+//	des_vely = des_velr * ahrs.cos_yaw(); // +East / -West
+//	des_velx = des_velr * -ahrs.sin_yaw(); // +North / -South
 
 	//combined forward/lateral
 //	des_vely = des_velf * ahrs.sin_yaw() + des_velr * ahrs.cos_yaw(); // +East / -West
@@ -144,16 +144,16 @@ void Sub::loiter_run()
     // run position controller
     pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler, false);
 
-	// get poshold forward and lateral outputs from wp_nav pitch and roll (from copter code)
-	float poshold_lateral = pos_control.get_roll(); //
-	float poshold_forward = -pos_control.get_pitch(); // output is reversed
+	// get pos_control forward and lateral outputs from wp_nav pitch and roll (from copter code)
+	float poscontrol_lateral = pos_control.get_roll(); //
+	float poscontrol_forward = -pos_control.get_pitch(); // output is reversed
 
 	// constrain target forward/lateral values
-	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
-	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
+	poscontrol_lateral = constrain_int16(poscontrol_lateral, -aparm.angle_max, aparm.angle_max);
+	poscontrol_forward = constrain_int16(poscontrol_forward, -aparm.angle_max, aparm.angle_max);
 
-	lateral_out = poshold_lateral/(float)aparm.angle_max;
-	forward_out = poshold_forward/(float)aparm.angle_max;
+	lateral_out = poscontrol_lateral/(float)aparm.angle_max;
+	forward_out = poscontrol_forward/(float)aparm.angle_max;
 
 	motors.set_lateral(lateral_out);
 	motors.set_forward(forward_out);
