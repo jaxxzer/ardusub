@@ -9,7 +9,7 @@
 //
 
 // 400hz loop update rate
-#define PERF_INFO_OVERTIME_THRESHOLD_MICROS 3000
+#define PERF_INFO_OVERTIME_THRESHOLD_MICROS 2500
 
 static uint16_t perf_info_loop_count;
 static uint32_t perf_info_max_time;
