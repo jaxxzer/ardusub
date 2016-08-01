@@ -5,12 +5,16 @@
 #include "Sub.h"
 
 #if POSHOLD_ENABLED == ENABLED
-static uint32_t last_loiter_message_ms = 0;
 
-float des_velx = 0;
-float des_vely = 0;
-float des_velf = 0;
-float des_velr = 0;
+namespace {
+
+	static uint32_t last_loiter_message_ms = 0;
+	float des_velx = 0;
+	float des_vely = 0;
+	float des_velf = 0;
+	float des_velr = 0;
+
+}
 
 // poshold_init - initialise PosHold controller
 bool Sub::loiter_init(bool ignore_checks)
@@ -56,8 +60,6 @@ void Sub::loiter_run()
 {
 	uint32_t tnow = millis();
 
-
-
     const Vector3f& vel = inertial_nav.get_velocity();
 
     // convert inertial nav earth-frame velocities to body-frame
@@ -65,12 +67,7 @@ void Sub::loiter_run()
     float vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
     float vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
 
-	if(tnow > last_loiter_message_ms + 1000) {
-		gcs_send_text_fmt(MAV_SEVERITY_INFO, "desvelf: %f, %f", des_velf, des_velr);
-		gcs_send_text_fmt(MAV_SEVERITY_INFO, "desvelx: %f, %f", des_velx, des_vely);
-		gcs_send_text_fmt(MAV_SEVERITY_INFO, "vel: %f, %f\n", vel_fw, vel_right);
-		last_loiter_message_ms = tnow;
-	}
+
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
@@ -132,11 +129,11 @@ void Sub::loiter_run()
 
 	// lateral only
 //	des_vely = des_velr * ahrs.cos_yaw(); // +East / -West
-//	des_velx = des_velr * -ahrs.sin_yaw(); // +North / -South
+//	des_velx = -des_velr * ahrs.sin_yaw(); // +North / -South
 
 	//combined forward/lateral
 //	des_vely = des_velf * ahrs.sin_yaw() + des_velr * ahrs.cos_yaw(); // +East / -West
-//	des_velx = des_velf * ahrs.cos_yaw() + des_velr * ahrs.sin_yaw(); // +North / -South
+//	des_velx = des_velf * ahrs.cos_yaw() - des_velr * ahrs.sin_yaw(); // +North / -South
 
     // set target position and velocity to current position and velocity
     pos_control.set_desired_velocity_xy(des_velx, des_vely);
@@ -175,5 +172,42 @@ void Sub::loiter_run()
 	// update altitude target and call position controller
 	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
 	pos_control.update_z_controller();
+
+	if(tnow > last_loiter_message_ms + 200) {
+//		gcs_send_text_fmt(MAV_SEVERITY_INFO, "desvelf: %f, %f", des_velf, des_velr);
+//		gcs_send_text_fmt(MAV_SEVERITY_INFO, "desvelx: %f, %f", des_velx, des_vely);
+//		gcs_send_text_fmt(MAV_SEVERITY_INFO, "vel: %f, %f\n", vel_fw, vel_right);
+		last_loiter_message_ms = tnow;
+
+		mavlink_msg_command_long_send(
+				(mavlink_channel_t)0, //channel
+				0, //target system
+				0, //target component
+				45, //command
+				0, //confirmation
+				des_velf,//1
+				des_velr,
+				vel_fw,
+				vel_right,
+				forward_out,
+				lateral_out,
+				poscontrol_forward
+				);
+
+//		mavlink_msg_command_long_send(
+//				(mavlink_channel_t)0, //channel
+//				0, //target system
+//				0, //target component
+//				46, //command
+//				0, //confirmation
+//				des_velx,//1
+//				des_vely,
+//				vel.x,
+//				vel.y,
+//				ahrs.yaw_sensor,
+//				ahrs.sin_yaw(),
+//				ahrs.cos_yaw()
+//				);
+	}
 }
 #endif  // POSHOLD_ENABLED == ENABLED

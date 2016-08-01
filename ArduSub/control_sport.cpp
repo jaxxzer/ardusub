@@ -22,6 +22,7 @@ namespace {
 
 	float kP = 1.0;
 	uint32_t last_pilot_heading = 0;
+	uint32_t last_pilot_yaw_ms = 0;
 }
 
 // poshold_init - initialise PosHold controller
@@ -54,6 +55,7 @@ bool Sub::sport_init(bool ignore_checks)
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
+    last_pilot_heading = ahrs.yaw_sensor;
     des_velf = 0;
     des_velr = 0;
     des_velx = 0;
@@ -105,7 +107,8 @@ void Sub::sport_run()
 
 	// get pilot's desired yaw rate in centidegrees per second
 	//float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-	int16_t xtrack_error = constrain_int16(-gps.crosstrack_error(), -4500, 4500);
+	//int16_t xtrack_error = constrain_int16(-gps.crosstrack_error(), -4500, 4500);
+	int16_t xtrack_error = -channel_lateral->get_control_in() / 10;
 	double target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
 	// get pilot desired climb rate
@@ -131,21 +134,21 @@ void Sub::sport_run()
 
 	}
 
-	des_velr = gps.crosstrack_error() * kP;
+	//des_velr = gps.crosstrack_error() * kP;
 
 	// rotate pilot desired velocities to earth-frame
 
 	// forward only
-//	des_vely = des_velf * ahrs.sin_yaw(); // +East / -West
-//	des_velx = des_velf * ahrs.cos_yaw(); // +North / -South
+	des_vely = des_velf * ahrs.sin_yaw(); // +East / -West
+	des_velx = des_velf * ahrs.cos_yaw(); // +North / -South
 
 	// lateral only
 //	des_vely = des_velr * ahrs.cos_yaw(); // +East / -West
 //	des_velx = des_velr * -ahrs.sin_yaw(); // +North / -South
 
 	//combined forward/lateral
-	des_vely = des_velf * ahrs.sin_yaw() + des_velr * ahrs.cos_yaw(); // +East / -West
-	des_velx = des_velf * ahrs.cos_yaw() - des_velr * ahrs.sin_yaw(); // +North / -South
+//	des_vely = des_velf * ahrs.sin_yaw() + des_velr * ahrs.cos_yaw(); // +East / -West
+//	des_velx = des_velf * ahrs.cos_yaw() - des_velr * ahrs.sin_yaw(); // +North / -South
 
     // set target position and velocity to current position and velocity
     pos_control.set_desired_velocity_xy(des_velx, des_vely);
@@ -176,48 +179,42 @@ void Sub::sport_run()
 	if(!is_zero(target_yaw_rate)) {
 
 		last_pilot_heading = ahrs.yaw_sensor;
+		last_pilot_yaw_ms = tnow;
 
 	} else {
-		error_heading = last_pilot_heading - ahrs.yaw_sensor;
 
-		if(error_heading > 18000) {
-			error_heading = error_heading - 36000; // wrap 0~360 degrees
-		} else if(error_heading < -18000) {
-			error_heading = error_heading + 36000;
+
+
+		if(tnow < last_pilot_yaw_ms + 250) {
+			target_yaw_rate = 0;
+			last_pilot_heading = ahrs.yaw_sensor;
+		} else {
+
+
+
+			error_heading = last_pilot_heading - ahrs.yaw_sensor;
+
+			if(error_heading > 18000) {
+				error_heading = error_heading - 36000; // wrap 0~360 degrees
+			} else if(error_heading < -18000) {
+				error_heading = error_heading + 36000;
+			}
+
+			//target_yaw_rate = error_heading * g.pid_heading_control.kP() + -channel_lateral->get_control_in() *;
+			target_yaw_rate = g.pid_heading_control.get_pid() + g.pid_crosstrack_control.get_pid();
 		}
 
-		//target_yaw_rate = error_heading * g.pid_heading_control.kP() + -channel_lateral->get_control_in() *;
-		target_yaw_rate = g.pid_heading_control.get_pid() + g.pid_crosstrack_control.get_pid();
+
+
+
 	}
 
 	if(tnow > last_pid_ms + pid_dt) {
 		last_pid_ms = tnow;
 		g.pid_heading_control.set_input_filter_all(error_heading);
-		g.pid_crosstrack_control.set_input_filter_all(-channel_lateral->get_control_in());
-		//g.pid_crosstrack_control.set_input_filter_all(gps.crosstrack_error());
+		//g.pid_crosstrack_control.set_input_filter_all(-channel_lateral->get_control_in());
+		g.pid_crosstrack_control.set_input_filter_all(xtrack_error);
 	}
-
-
-	if(tnow > last_sport_message_ms + 1000) {
-//		mavlink_message_command_long_send(
-//				0,
-//				0,
-//				0,
-//				45,
-//				error_heading,//1
-//				ahrs.yaw_sensor,
-//				last_pilot_heading,
-//				target_yaw_rate,
-//				gps.crosstrack_error(),
-//				0,
-//				0
-//				);
-		gcs_send_text_fmt(MAV_SEVERITY_INFO, "%ld, %ld, %ld, %f, %d", error_heading, ahrs.yaw_sensor, last_pilot_heading, target_yaw_rate, channel_lateral->get_control_in());
-		gcs_send_text_fmt(MAV_SEVERITY_INFO, "%f, %f", g.pid_heading_control.get_pid(), g.pid_crosstrack_control.get_pid());
-//		gcs_send_text_fmt(MAV_SEVERITY_INFO, "%f, %ld, %ld, %f, %d", vel_fw, ahrs.yaw_sensor, last_pilot_heading, des_velf, gps.crosstrack_error());
-		last_sport_message_ms = tnow;
-	}
-
 
 	// update attitude controller targets
 	attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
@@ -231,5 +228,34 @@ void Sub::sport_run()
 	// update altitude target and call position controller
 	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
 	pos_control.update_z_controller();
+
+
+
+
+
+
+
+
+
+	if(tnow > last_sport_message_ms + 200) {
+		mavlink_msg_command_long_send(
+				(mavlink_channel_t)0, //channel
+				0, //target system
+				0, //target component
+				47, //command id
+				0, //confirmation
+				error_heading,//1
+				ahrs.yaw_sensor,
+				last_pilot_heading,
+				target_yaw_rate,
+				gps.crosstrack_error(),
+				des_velf,
+				vel_fw
+				);
+		//gcs_send_text_fmt(MAV_SEVERITY_INFO, "%ld, %ld, %ld, %f, %d", error_heading, ahrs.yaw_sensor, last_pilot_heading, target_yaw_rate, channel_lateral->get_control_in());
+		//gcs_send_text_fmt(MAV_SEVERITY_INFO, "%f, %f", g.pid_heading_control.get_pid(), g.pid_crosstrack_control.get_pid());
+//		gcs_send_text_fmt(MAV_SEVERITY_INFO, "%f, %ld, %ld, %f, %d", vel_fw, ahrs.yaw_sensor, last_pilot_heading, des_velf, gps.crosstrack_error());
+		last_sport_message_ms = tnow;
+	}
 }
 #endif  // POSHOLD_ENABLED == ENABLED
