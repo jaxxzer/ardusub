@@ -81,10 +81,12 @@ void Sub::sport_run()
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    	//reset targets
         des_velf = 0;
         des_velr = 0;
         des_velx = 0;
         des_vely = 0;
+        last_pilot_heading = ahrs.yaw_sensor;
 
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
 
@@ -244,13 +246,13 @@ void Sub::sport_run()
 				0, //target component
 				47, //command id
 				0, //confirmation
-				error_heading,//1
-				ahrs.yaw_sensor,
-				last_pilot_heading,
-				target_yaw_rate,
-				gps.crosstrack_error(),
-				des_velf,
-				vel_fw
+				des_velf,//1
+				des_velr,
+				vel_fw,
+				vel_right,
+				forward_out,
+				lateral_out,
+				poscontrol_forward
 				);
 		//gcs_send_text_fmt(MAV_SEVERITY_INFO, "%ld, %ld, %ld, %f, %d", error_heading, ahrs.yaw_sensor, last_pilot_heading, target_yaw_rate, channel_lateral->get_control_in());
 		//gcs_send_text_fmt(MAV_SEVERITY_INFO, "%f, %f", g.pid_heading_control.get_pid(), g.pid_crosstrack_control.get_pid());
