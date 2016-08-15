@@ -124,6 +124,8 @@ public:
 
     Sub(void);
 
+    bool follow_bottom;
+
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;

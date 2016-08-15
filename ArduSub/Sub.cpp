@@ -23,6 +23,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Sub class
  */
 Sub::Sub(void) :
+	follow_bottom(false),
 	DataFlash{FIRMWARE_STRING},
     flight_modes(&g.flight_mode1),
     mission(ahrs, 

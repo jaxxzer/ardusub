@@ -5,6 +5,7 @@
 /*
  * control_althold.pde - init and run calls for althold, flight mode
  */
+static uint32_t last_althold_warn_ms = 0;
 
 // althold_init - initialise althold controller
 bool Sub::althold_init(bool ignore_checks)
@@ -13,6 +14,8 @@ bool Sub::althold_init(bool ignore_checks)
 		gcs_send_text(MAV_SEVERITY_WARNING, "Depth hold requires external pressure sensor.");
 		return false;
 	}
+
+	follow_bottom = false;
 
     // initialize vertical speeds and leash lengths
     // sets the maximum speed up and down returned by position controller
@@ -33,6 +36,7 @@ bool Sub::althold_init(bool ignore_checks)
 // should be called at 100hz or more
 void Sub::althold_run()
 {
+	uint32_t tnow = millis();
     AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;
 
@@ -82,6 +86,7 @@ void Sub::althold_run()
         break;
 
     case AltHold_NotAutoArmed:
+    	follow_bottom = false;
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Multicopters do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -132,10 +137,18 @@ void Sub::althold_run()
         // call attitude controller
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
+        static uint32_t warn_ms;
         // adjust climb rate using rangefinder
-        if (rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+        if(follow_bottom) {
+			if (rangefinder_alt_ok()) {
+				// if rangefinder is ok, use surface tracking
+				target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+			} else {
+				if(tnow > last_althold_warn_ms + 1000) {
+					last_althold_warn_ms = tnow;
+					gcs_send_text(MAV_SEVERITY_WARNING, "Bad Range.");
+				}
+			}
         }
 
         // call position controller

@@ -166,15 +166,16 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 			break;
 		case JSButton::button_function_t::k_lights2_cycle:
 			{
-				static bool increasing = true;
-				if ( increasing ) {
-					lights2 = constrain_float(lights2+100,1100,1900);
-				} else {
-					lights2 = constrain_float(lights2-100,1100,1900);
-				}
-				if ( lights2 >= 1900 || lights2 <= 1100 ) {
-					increasing = !increasing;
-				}
+				follow_bottom = !follow_bottom;
+//				static bool increasing = true;
+//				if ( increasing ) {
+//					lights2 = constrain_float(lights2+100,1100,1900);
+//				} else {
+//					lights2 = constrain_float(lights2-100,1100,1900);
+//				}
+//				if ( lights2 >= 1900 || lights2 <= 1100 ) {
+//					increasing = !increasing;
+//				}
 			}
 			break;
 		case JSButton::button_function_t::k_lights2_brighter:
