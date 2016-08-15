@@ -170,7 +170,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // fail if not enough sats
-    bool numSatsFail = (_ahrs->get_gps().num_sats() < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
+    bool numSatsFail = (_ahrs->get_gps().num_sats() < 2) && (frontend->_gpsCheck & MASK_GPS_NSATS);
 
     // Report check result as a text string and bitmask
     if (numSatsFail) {
