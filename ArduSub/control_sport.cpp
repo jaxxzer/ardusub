@@ -33,6 +33,8 @@ bool Sub::sport_init(bool ignore_checks)
         return false;
     }
 
+    follow_bottom = false;
+
     pos_control.init_xy_controller();
 
     // set speed and acceleration from wpnav's speed and acceleration
@@ -81,6 +83,9 @@ void Sub::sport_run()
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+
+    	follow_bottom = false;
+
     	//reset targets
         des_velf = 0;
         des_velr = 0;
@@ -222,7 +227,7 @@ void Sub::sport_run()
 	attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
 	// adjust climb rate using rangefinder
-	if (rangefinder_alt_ok()) {
+	if (rangefinder_alt_ok() && follow_bottom) {
 		// if rangefinder is ok, use surface tracking
 		target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
 	}
