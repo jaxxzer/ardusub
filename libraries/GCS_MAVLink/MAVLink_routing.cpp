@@ -26,7 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define ROUTING_DEBUG 0
+#define ROUTING_DEBUG 1
 
 // constructor
 MAVLink_routing::MAVLink_routing(void) : num_routes(0) {}
@@ -117,6 +117,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     if (msg->msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
         // ADSB packets are not forwarded, they have their own stream rate
         return true;
+    }
+
+    if (msg->msgid == MAVLINK_MSG_ID_SERIAL_CONTROL || msg->msgid == MAVLINK_MSG_ID_MANUAL_CONTROL) {
+    	// don't forward SERIAL_CONTROL packets
+    	return true;
     }
 
     // extract the targets for this packet
