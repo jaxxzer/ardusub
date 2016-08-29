@@ -361,7 +361,7 @@ bool Sub::position_ok()
 bool Sub::ekf_position_ok()
 {
     if (!ahrs.have_inertial_nav()) {
-    	gcs_send_text(MAV_SEVERITY_WARNING, "no intertial nav!");
+    	//gcs_send_text(MAV_SEVERITY_WARNING, "no intertial nav!");
         // do not allow navigation with dcm position
         return false;
     }
@@ -373,12 +373,12 @@ bool Sub::ekf_position_ok()
     // if disarmed we accept a predicted horizontal position
     if (!motors.armed()) {
     	retval = ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
-    	gcs_send_text(MAV_SEVERITY_WARNING, "predicted horizontal position, %b", retval);
+    	//gcs_send_text_fmt(MAV_SEVERITY_WARNING, "predicted horizontal position, %b", retval);
         return retval;
     } else {
         // once armed we require a good absolute position and EKF must not be in const_pos_mode
         retval = (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
-        gcs_send_text(MAV_SEVERITY_WARNING, "absolute horizontal position, %b", retval);
+        //gcs_send_text_fmt(MAV_SEVERITY_WARNING, "absolute horizontal position, %b", retval);
         return retval;
     }
 }

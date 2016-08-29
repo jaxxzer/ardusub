@@ -14,9 +14,9 @@ namespace {
 bool Sub::poshold_init(bool ignore_checks)
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!position_ok() && !ignore_checks) {
-        return false;
-    }
+//    if (!position_ok() && !ignore_checks) {
+//        return false;
+//    }
     
     follow_bottom = false;
 
