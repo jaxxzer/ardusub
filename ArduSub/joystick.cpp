@@ -167,6 +167,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift) {
 		case JSButton::button_function_t::k_lights2_cycle:
 			{
 				follow_bottom = !follow_bottom;
+				gcs_send_text_fmt(MAV_SEVERITY_WARNING, "follow %d", follow_bottom);
 //				static bool increasing = true;
 //				if ( increasing ) {
 //					lights2 = constrain_float(lights2+100,1100,1900);
