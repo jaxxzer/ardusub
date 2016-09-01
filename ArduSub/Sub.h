@@ -796,8 +796,8 @@ private:
     void land_do_not_use_GPS();
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
-    bool loiter_init(bool ignore_checks);
-    void loiter_run();
+    bool velhold_init(bool ignore_checks);
+    void velhold_run();
     bool poshold_init(bool ignore_checks);
     void poshold_run();
     void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
@@ -830,8 +830,8 @@ private:
     void rtl_land_run();
     void rtl_build_path(bool terrain_following_allowed);
     void rtl_compute_return_alt(const Location_Class &rtl_origin_point, Location_Class &rtl_return_target, bool terrain_following_allowed);
-    bool sport_init(bool ignore_checks);
-    void sport_run();
+    bool transect_init(bool ignore_checks);
+    void transect_run();
     bool stabilize_init(bool ignore_checks);
     void stabilize_run();
     bool manual_init(bool ignore_checks);
