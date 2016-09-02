@@ -40,6 +40,11 @@ public:
     void set_system_clock(uint64_t time_utc_usec);
 
     /*
+      get system clock in UTC microseconds
+     */
+    uint64_t get_system_clock(void);
+
+    /*
       get system identifier (STM32 serial number)
      */
     bool get_system_id(char buf[40]);

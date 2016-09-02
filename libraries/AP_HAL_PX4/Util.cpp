@@ -100,6 +100,13 @@ void PX4Util::set_system_clock(uint64_t time_utc_usec)
     clock_settime(CLOCK_REALTIME, &ts);    
 }
 
+uint64_t PX4Util::get_system_clock()
+{
+	timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	return ts.tv_nec / 1000;
+}
+
 /*
   display PX4 system identifer - board type and serial number
  */

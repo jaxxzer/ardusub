@@ -41,6 +41,8 @@ void Sub::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Sub::userhook_SuperSlowLoop()
 {
+	uint32_t time = hal.util->get_system_clock();
+	gcs_send_text_fmt(MAV_SEVERITY_INFO, "%d", time);
     // put your 1Hz code here
 }
 #endif
