@@ -45,7 +45,7 @@ public:
      */
     virtual void set_system_clock(uint64_t time_utc_usec) {}
 
-    virtual uint32_t get_system_clock(void) { return 0; }
+    virtual uint64_t get_system_clock(void) { return 0; }
 
     /*
       get system clock in UTC milliseconds
