@@ -52,6 +52,11 @@ void Sub::init_rc_in()
     // set default dead zones
     default_dead_zones();
 
+    // initialize rc input to 1500 on all channels (rather than 0)
+    for(int i = 0; i < RC_MAX_CHANNELS; i++) {
+        hal.rcin->set_override(i, 1500);
+    }
+
     // initialise throttle_zero flag
     ap.throttle_zero = true;
 }
