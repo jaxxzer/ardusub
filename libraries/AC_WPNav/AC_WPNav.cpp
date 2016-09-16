@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL/AP_HAL.h>
 #include "AC_WPNav.h"
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -432,6 +433,7 @@ bool AC_WPNav::set_wp_destination(const Location_Class& destination)
 
     // convert destination location to vector
     if (!get_vector_NEU(destination, dest_neu, terr_alt)) {
+    	::printf("get_vector_NEU fail\n");
         return false;
     }
 
@@ -458,6 +460,7 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
     if (terrain_alt) {
         float origin_terr_offset;
         if (!get_terrain_offset(origin_terr_offset)) {
+        	::printf("set_wp_destination: get_terrain_offset fail \n");
             return false;
         }
         origin.z -= origin_terr_offset;
@@ -505,6 +508,7 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     float origin_terr_offset = 0.0f;
     if (terrain_alt) {
         if (!get_terrain_offset(origin_terr_offset)) {
+        	::printf("set_wp_origin_and_destination: get_terrain_offset fail\n");
             return false;
         }
     }
@@ -575,6 +579,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // calculate terrain adjustments
     float terr_offset = 0.0f;
     if (_terrain_alt && !get_terrain_offset(terr_offset)) {
+    	::printf("advance_wp_target_along_track fail\n");
         return false;
     }
 
@@ -1158,6 +1163,7 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
             offset_cm = _inav.get_altitude() - _rangefinder_alt_cm;
             return true;
         } else {
+        	::printf("get_terrain_offset: rangefinder not healthy\n");
             return false;
         }
     }
@@ -1169,6 +1175,7 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
         return true;
     }
 #endif
+    ::printf("get_terrain_offset: fail\n");
     return false;
 }
 
@@ -1179,6 +1186,7 @@ bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &te
     // convert location to NEU vector3f
     Vector3f res_vec;
     if (!loc.get_vector_xy_from_origin_NEU(res_vec)) {
+    	::printf("get_vector_xy_from_origin_NEU fail\n");
         return false;
     }
 
@@ -1186,6 +1194,7 @@ bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &te
     if (loc.get_alt_frame() == Location_Class::ALT_FRAME_ABOVE_TERRAIN) {
         int32_t terr_alt;
         if (!loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, terr_alt)) {
+        	::printf("get_alt_cm fail: ALT_FRAME_ABOVE_TERRAIN\n");
             return false;
         }
         vec.z = terr_alt;
@@ -1194,6 +1203,7 @@ bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &te
         terrain_alt = false;
         int32_t temp_alt;
         if (!loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, temp_alt)) {
+        	::printf("get_alt_cm fail: ALT_FRAME_ABOVE_ORIGIN\n");
             return false;
         }
         vec.z = temp_alt;

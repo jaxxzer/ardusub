@@ -1,7 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Sub.h"
-
+namespace {
+	static uint32_t last_auto_msg_ms = 0;
+}
 /*
  * control_auto.pde - init and run calls for auto flight mode
  *
@@ -22,14 +24,14 @@
 // auto_init - initialise auto controller
 bool Sub::auto_init(bool ignore_checks)
 {
-    if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
+    //if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
 
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce change of flips)
-        if (motors.armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
-            return false;
-        }
+//        if (motors.armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
+//            gcs_send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
+//            return false;
+//        }
 
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
@@ -46,9 +48,9 @@ bool Sub::auto_init(bool ignore_checks)
         // start/resume the mission (based on MIS_RESTART parameter)
         mission.start_or_resume();
         return true;
-    }else{
-        return false;
-    }
+//    }else{
+//        return false;
+//    }
 }
 
 // auto_run - runs the auto controller
@@ -198,11 +200,13 @@ void Sub::auto_wp_start(const Vector3f& destination)
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
 void Sub::auto_wp_start(const Location_Class& dest_loc)
 {
+	gcs_send_text(MAV_SEVERITY_INFO, "auto_wp_start");
 	auto_mode = Auto_WP;
 
 	// send target to waypoint controller
 	if (!wp_nav.set_wp_destination(dest_loc)) {
 		// failure to set destination can only be because of missing terrain data
+	    gcs_send_text(MAV_SEVERITY_CRITICAL,"wp start, fs terrain");
 		failsafe_terrain_on_event();
 		return;
 	}
@@ -248,16 +252,47 @@ void Sub::auto_wp_run()
     // run waypoint controller
     failsafe_terrain_set_status(wp_nav.update_wpnav());
 
+    ///////////////////////
+    // update xy outputs //
+	int32_t poshold_lateral = wp_nav.get_roll();
+	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
+
+	// constrain target forward/lateral values
+	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
+	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
+
+	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
+	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
+
+//	motors.set_lateral(lateral_out);
+//	motors.set_forward(forward_out);
+
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
 
+
+	////////////////////////////
+	// update attitude output //
+
+    // get pilot desired lean angles
+    float target_roll, target_pitch;
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
+    	if(AP_HAL::millis() > last_auto_msg_ms + 2500) {
+    		last_auto_msg_ms = AP_HAL::millis();
+    		gcs_send_text(MAV_SEVERITY_INFO, "wp: hold yaw");
+    	}
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
     }else{
+    	if(AP_HAL::millis() > last_auto_msg_ms + 2500) {
+    		last_auto_msg_ms = AP_HAL::millis();
+    		gcs_send_text_fmt(MAV_SEVERITY_INFO, "wp: target_yaw: %f", get_auto_heading());
+    	}
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(),true, get_smoothing_gain());
     }
 }
 
@@ -502,9 +537,9 @@ void Sub::auto_nav_guided_run()
 bool Sub::auto_loiter_start()
 {
     // return failure if GPS is bad
-    if (!position_ok()) {
-        return false;
-    }
+//    if (!position_ok()) {
+//        return false;
+//    }
     auto_mode = Auto_Loiter;
 
     Vector3f origin = inertial_nav.get_position();
@@ -519,6 +554,7 @@ bool Sub::auto_loiter_start()
 
     // hold yaw at current heading
     set_auto_yaw_mode(AUTO_YAW_HOLD);
+    gcs_send_text(MAV_SEVERITY_INFO, "auto_loiter_start");
 
     return true;
 }
@@ -528,7 +564,7 @@ bool Sub::auto_loiter_start()
 void Sub::auto_loiter_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+    if (!motors.armed() || !motors.get_interlock()) {
     	motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -548,8 +584,43 @@ void Sub::auto_loiter_run()
     // run waypoint and z-axis position controller
     failsafe_terrain_set_status(wp_nav.update_wpnav());
 
+    ///////////////////////
+    // update xy outputs //
+	int32_t poshold_lateral = wp_nav.get_roll();
+	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
+
+	// constrain target forward/lateral values
+	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
+	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
+
+	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
+	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
+
+//	motors.set_lateral(lateral_out);
+//	motors.set_forward(forward_out);
+
+    // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+
+    // get pilot desired lean angles
+    float target_roll, target_pitch;
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+
+    if (auto_yaw_mode == AUTO_YAW_HOLD) {
+    	if(AP_HAL::millis() > last_auto_msg_ms + 2500) {
+    		last_auto_msg_ms = AP_HAL::millis();
+    		gcs_send_text(MAV_SEVERITY_INFO, "loiter: hold yaw");
+    	}
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    }else{
+    	if(AP_HAL::millis() > last_auto_msg_ms + 2500) {
+    		last_auto_msg_ms = AP_HAL::millis();
+    		gcs_send_text_fmt(MAV_SEVERITY_INFO, "loiter: target_yaw: %f", get_auto_heading());
+    	}
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(),true, get_smoothing_gain());
+    }
 }
 
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter

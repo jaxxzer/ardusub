@@ -7,6 +7,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AHRS/AP_AHRS_NavEKF.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -131,11 +132,13 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
     if (frame == ALT_FRAME_ABOVE_TERRAIN || desired_frame == ALT_FRAME_ABOVE_TERRAIN) {
 #if AP_TERRAIN_AVAILABLE
         if (_ahrs == NULL || _terrain == NULL || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
+        	::printf("get_alt_cm ALT_FRAME_ABOVE_TERRAIN error\n");
             return false;
         }
         // convert terrain alt to cm
         alt_terr_cm *= 100.0f;
 #else
+        ::printf("get_alt_cm !AP_TERRAIN_AVAILABLE\n");
         return false;
 #endif
     }
@@ -154,6 +157,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
                 if (_ahrs == NULL || !_ahrs->get_origin(ekf_origin)) {
+                	::printf("absolute frame: no ekf origin\n");
                     return false;
                 }
                 alt_abs = alt + ekf_origin.alt;
@@ -163,6 +167,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
             alt_abs = alt + alt_terr_cm;
             break;
         default:
+        	::printf("ERROR!\n");
             // unknown conversion to absolute alt, this should never happen
             return false;
     }
@@ -180,6 +185,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
                 if (_ahrs == NULL || !_ahrs->get_origin(ekf_origin)) {
+                	::printf("desired frame: no ekf origin\n");
                     return false;
                 }
                 ret_alt_cm = alt_abs - ekf_origin.alt;
@@ -190,6 +196,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
             return true;
         default:
             // should never happen
+        	::printf("ERROR!!\n");
             return false;
     }
 }
