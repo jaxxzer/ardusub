@@ -153,12 +153,14 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     initial_armed_bearing = ahrs.yaw_sensor;
 
     if (ap.home_state == HOME_UNSET) {
+    	gcs_send_text(MAV_SEVERITY_INFO, "Home unset");
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        
-        // Always use absolute altitude for ROV
-		// ahrs.resetHeightDatum();
-		// Log_Write_Event(DATA_EKF_ALT_RESET);
+
+        // Always use absolute altitude (depth) for ROV
+//		ahrs.resetHeightDatum();
+//		Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+    	gcs_send_text(MAV_SEVERITY_INFO, "Home set not locked");
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location();
     }

@@ -54,7 +54,11 @@ void Sub::init_rc_in()
 
     // initialize rc input to 1500 on all channels (rather than 0)
     for(int i = 0; i < RC_MAX_CHANNELS; i++) {
-        hal.rcin->set_override(i, 1500);
+    	if(i == 4) {
+    		hal.rcin->set_override(i, 1100); // Channel 5 mode selection
+    	} else {
+    		hal.rcin->set_override(i, 1500);
+    	}
     }
 
     // initialise throttle_zero flag

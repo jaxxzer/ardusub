@@ -5,42 +5,48 @@
 #ifdef USERHOOK_INIT
 void Sub::userhook_init()
 {
-    // put your initialisation code here
-    // this will be called once at start-up
+	// put your initialisation code here
+	// this will be called once at start-up
 }
 #endif
 
 #ifdef USERHOOK_FASTLOOP
 void Sub::userhook_FastLoop()
 {
-    // put your 100Hz code here
+	// put your 100Hz code here
 }
 #endif
 
 #ifdef USERHOOK_50HZLOOP
 void Sub::userhook_50Hz()
 {
-    // put your 50Hz code here
+	// put your 50Hz code here
 }
 #endif
 
 #ifdef USERHOOK_MEDIUMLOOP
 void Sub::userhook_MediumLoop()
 {
-    // put your 10Hz code here
+	// put your 10Hz code here
 }
 #endif
 
 #ifdef USERHOOK_SLOWLOOP
 void Sub::userhook_SlowLoop()
 {
-    // put your 3.3Hz code here
+	// put your 3.3Hz code here
 }
 #endif
 
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Sub::userhook_SuperSlowLoop()
 {
-    // put your 1Hz code here
+	static uint32_t last_msg_ms = 0;
+	if(AP_HAL::millis() > last_msg_ms + 10000) {
+		last_msg_ms = AP_HAL::millis();
+		gcs_send_text_fmt(MAV_SEVERITY_INFO, "Baro: %f", barometer.get_altitude() * 100.0f);
+		gcs_send_text_fmt(MAV_SEVERITY_INFO, "Inav: %f", inertial_nav.get_altitude());
+//		gcs_send_text_fmt(MAV_SEVERITY_INFO, "Currentloc: ")
+	}
 }
 #endif

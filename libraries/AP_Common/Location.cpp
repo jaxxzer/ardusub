@@ -189,6 +189,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
                     return false;
                 }
                 ret_alt_cm = alt_abs - ekf_origin.alt;
+                ::printf("ret_alt_cm: %d, alt_abs: %d, ekf_origin.alt: %d", ret_alt_cm, alt_abs, ekf_origin.alt);
                 return true;
             }
         case ALT_FRAME_ABOVE_TERRAIN:

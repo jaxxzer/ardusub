@@ -353,6 +353,10 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 	// convert back to location
 	Location_Class target_loc(cmd.content.location);
 
+	// In mavproxy misseditor: Abs = 0 = ALT_FRAME_ABSOLUTE
+	//                         Rel = 1 = ALT_FRAME_ABOVE_HOME
+	//                         AGL = 3 = ALT_FRAME_ABOVE_TERRAIN
+	//    2 = ALT_FRAME_ABOVE_ORIGIN, not an option in mavproxy misseditor
 	gcs_send_text_fmt(MAV_SEVERITY_INFO, "do_loiter_unlimited, target alt frame is: %d", target_loc.get_alt_frame());
 
     // use current location if not provided
@@ -364,6 +368,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
     }
+
 
     // use current altitude if not provided
     // To-Do: use z-axis stopping point instead of current alt
@@ -379,7 +384,9 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
             target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
     }
-
+	int32_t current_altitude;
+	current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, current_altitude);
+	gcs_send_text_fmt(MAV_SEVERITY_INFO, "cur alt abh: %d, tgt alt abh: %d", current_altitude, target_loc.alt);
     // start way point navigator and provide it the desired location
     auto_wp_start(target_loc);
 }
@@ -669,7 +676,7 @@ bool Sub::verify_loiter_time()
 	static uint32_t last_msg_ms = 0;
     // return immediately if we haven't reached our destination
     if (!wp_nav.reached_wp_destination()) {
-    	if(AP_HAL::millis() > last_msg_ms + 2500) {
+    	if(AP_HAL::millis() > last_msg_ms + 10000) {
     		last_msg_ms = AP_HAL::millis();
     		gcs_send_text(MAV_SEVERITY_INFO, "verify_loiter_time: wp not reached");
     	}

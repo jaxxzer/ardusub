@@ -264,8 +264,8 @@ void Sub::auto_wp_run()
 	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
 	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
 
-//	motors.set_lateral(lateral_out);
-//	motors.set_forward(forward_out);
+	motors.set_lateral(lateral_out);
+	motors.set_forward(forward_out);
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
