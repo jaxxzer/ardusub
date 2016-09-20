@@ -445,6 +445,8 @@ private:
     // bearing from current location to the yaw_look_at_WP
     float yaw_look_at_WP_bearing;
 
+    float yaw_xtrack_correct_heading;
+
     // yaw used for YAW_LOOK_AT_HEADING yaw_mode
     int32_t yaw_look_at_heading;
 

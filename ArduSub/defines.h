@@ -17,12 +17,13 @@
 
 // Autopilot Yaw Mode enumeration
 enum autopilot_yaw_mode {
-    AUTO_YAW_HOLD =             0,  // pilot controls the heading
-    AUTO_YAW_LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
-    AUTO_YAW_ROI =              2,  // point towards a location held in roi_WP (no pilot input accepted)
-    AUTO_YAW_LOOK_AT_HEADING =  3,  // point towards a particular angle (not pilot input accepted)
-    AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
-    AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+    AUTO_YAW_HOLD =              0,  // pilot controls the heading
+    AUTO_YAW_LOOK_AT_NEXT_WP =   1,  // point towards next waypoint (no pilot input accepted)
+    AUTO_YAW_ROI =               2,  // point towards a location held in roi_WP (no pilot input accepted)
+    AUTO_YAW_LOOK_AT_HEADING =   3,  // point towards a particular angle (not pilot input accepted)
+    AUTO_YAW_LOOK_AHEAD =        4,  // point in the direction the copter is moving
+    AUTO_YAW_RESETTOARMEDYAW =   5,  // point towards heading at time motors were armed
+	AUTO_YAW_CORRECT_XTRACK =    6   // steer the sub in order to correct for crosstrack error during line following
 };
 
 // Ch6... Ch12 aux switch control
@@ -197,7 +198,7 @@ enum tuning_func {
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
-
+#define WP_YAW_BEHAVIOR_CORRECT_XTRACK				  4   // point towards intermediate position target during line following
 // Auto modes
 enum AutoMode {
     Auto_TakeOff,

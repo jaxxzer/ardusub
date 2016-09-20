@@ -247,11 +247,15 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 // exit_mission - function that is called once the mission completes
 void Sub::exit_mission()
 {
-	gcs_send_text(MAV_SEVERITY_INFO, "exit mission");
+	gcs_send_text(MAV_SEVERITY_INFO, "Mission Complete!");
+
     // play a tone
     AP_Notify::events.mission_complete = 1;
 
-	init_disarm_motors();
+    // Try to enter loiter, if that fails, go to depth hold
+    if(!auto_loiter_start()) {
+        set_mode(ALT_HOLD, MODE_REASON_MISSION_END);
+    }
 }
 
 /********************************************************************************/
@@ -386,7 +390,9 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     }
 	int32_t current_altitude;
 	current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, current_altitude);
-	gcs_send_text_fmt(MAV_SEVERITY_INFO, "cur alt abh: %d, tgt alt abh: %d", current_altitude, target_loc.alt);
+	int32_t target_altitude;
+	target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, target_altitude);
+	gcs_send_text_fmt(MAV_SEVERITY_INFO, "cur alt abh: %d, tgt alt abh: %d", current_altitude, target_altitude);
     // start way point navigator and provide it the desired location
     auto_wp_start(target_loc);
 }

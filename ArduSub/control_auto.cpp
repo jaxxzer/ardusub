@@ -254,18 +254,23 @@ void Sub::auto_wp_run()
 
     ///////////////////////
     // update xy outputs //
+
+    // get roll and pitch targets in centidegrees
 	int32_t poshold_lateral = wp_nav.get_roll();
 	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
 
 	// constrain target forward/lateral values
+	// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
 	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
 	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
 
+	// Normalize
 	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
 	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
 
-	motors.set_lateral(lateral_out);
-	motors.set_forward(forward_out);
+	// Send to forward/lateral outputs
+//	motors.set_lateral(lateral_out);
+//	motors.set_forward(forward_out);
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -292,7 +297,7 @@ void Sub::auto_wp_run()
     		gcs_send_text_fmt(MAV_SEVERITY_INFO, "wp: target_yaw: %f", get_auto_heading());
     	}
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(),true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(), true, get_smoothing_gain());
     }
 }
 
@@ -586,16 +591,21 @@ void Sub::auto_loiter_run()
 
     ///////////////////////
     // update xy outputs //
+
+    // get roll and pitch targets in centidegrees
 	int32_t poshold_lateral = wp_nav.get_roll();
 	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
 
 	// constrain target forward/lateral values
+	// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
 	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
 	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
 
+	// Normalize
 	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
 	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
 
+	// Send to forward/lateral outputs
 //	motors.set_lateral(lateral_out);
 //	motors.set_forward(forward_out);
 
@@ -644,6 +654,10 @@ uint8_t Sub::get_default_auto_yaw_mode(bool rtl)
         case WP_YAW_BEHAVIOR_LOOK_AHEAD:
             return AUTO_YAW_LOOK_AHEAD;
             break;
+
+        case WP_YAW_BEHAVIOR_CORRECT_XTRACK:
+        	return AUTO_YAW_CORRECT_XTRACK;
+        	break;
 
         case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP:
         default:
@@ -708,6 +722,8 @@ void Sub::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int
     }
 
     // get turn speed
+    // TODO actually implement this, right now, yaw_look_at_heading_slew is unused
+    // see AP_Float _slew_yaw in AC_AttitudeControl
     if (is_zero(turn_rate_dps)) {
         // default to regular auto slew rate
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
@@ -785,12 +801,19 @@ float Sub::get_auto_heading(void)
         return initial_armed_bearing;
         break;
 
+    case AUTO_YAW_CORRECT_XTRACK:
+    	// Get the bearing from the current position to intermediate position target
+		return wp_nav.get_loiter_bearing_to_target();
+    	break;
+
     case AUTO_YAW_LOOK_AT_NEXT_WP:
     default:
         // point towards next waypoint.
         // we don't use wp_bearing because we don't want the copter to turn too much during flight
         return wp_nav.get_yaw();
         break;
+
+
     }
 }
 
