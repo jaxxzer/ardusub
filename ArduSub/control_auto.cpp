@@ -179,6 +179,7 @@ void Sub::auto_takeoff_run()
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
+// Terrain altitude disabled
 void Sub::auto_wp_start(const Vector3f& destination)
 {
     auto_mode = Auto_WP;
@@ -194,6 +195,7 @@ void Sub::auto_wp_start(const Vector3f& destination)
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
+// Terrain altitude determined by dest_loc alt frame
 void Sub::auto_wp_start(const Location_Class& dest_loc)
 {
 	auto_mode = Auto_WP;
