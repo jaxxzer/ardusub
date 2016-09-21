@@ -36,7 +36,11 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Range: 10 1000
     // @Increment: 1
     // @User: Standard
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    AP_GROUPINFO("ALT_MAX",     3,  AC_Fence,   _alt_max,       AS_FENCE_ALT_MAX_DEFAULT),
+#else
     AP_GROUPINFO("ALT_MAX",     3,  AC_Fence,   _alt_max,       AC_FENCE_ALT_MAX_DEFAULT),
+#endif
 
     // @Param: RADIUS
     // @DisplayName: Circular Fence Radius
@@ -91,10 +95,13 @@ AC_Fence::AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
 {
     AP_Param::setup_object_defaults(this, var_info);
 
+#if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
     // check for silly fence values
     if (_alt_max < 0.0f) {
         _alt_max.set_and_save(AC_FENCE_ALT_MAX_DEFAULT);
     }
+#endif
+
     if (_circle_radius < 0) {
         _circle_radius.set_and_save(AC_FENCE_CIRCLE_RADIUS_DEFAULT);
     }
