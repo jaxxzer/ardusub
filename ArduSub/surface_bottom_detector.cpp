@@ -30,22 +30,24 @@ void Sub::update_surface_and_bottom_detector()
 	Vector3f velocity = inertial_nav.get_velocity();
 
 	// check that we are not moving up or down
-	bool vel_stationary = velocity.z > -3 && velocity.z < 3;
+	bool vel_stationary = velocity.z > -2 && velocity.z < 2;
 
 	if (vel_stationary) {
-		if(motors.limit.throttle_upper || pos_control.get_desired_velocity().z > 10) {
+		if(motors.limit.throttle_upper || (pos_control.get_alt_target() - current_depth) > 2) {
 			// surface criteria met, increment counter and see if we've triggered
 			if( surface_detector_count < ((float)SURFACE_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
 				surface_detector_count++;
 			} else {
+				set_bottomed(false);
 				set_surfaced(true);
 			}
 
-		} else if(motors.limit.throttle_lower || pos_control.get_desired_velocity().z < -10) {
+		} else if(motors.limit.throttle_lower || (pos_control.get_alt_target() - current_depth) < -2) {
 			// bottom criteria met, increment counter and see if we've triggered
 			if( bottom_detector_count < ((float)BOTTOM_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
 				bottom_detector_count++;
 			} else {
+				set_surfaced(false);
 				set_bottomed(true);
 			}
 
