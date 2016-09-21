@@ -8,7 +8,9 @@ void Sub::init_barometer(bool full_calibration)
     if (full_calibration) {
         barometer.calibrate();
     }else{
-        barometer.update_calibration();
+    	barometer.calibrate();
+    	//Todo, update this to use base pressure instead of ground pressure
+        //barometer.update_calibration();
     }
     gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }

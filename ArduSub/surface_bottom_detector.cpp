@@ -19,39 +19,21 @@ void Sub::update_surface_and_bottom_detector()
 		return;
 	}
 
-	Vector3f velocity;
-	ahrs.get_velocity_NED(velocity);
+	// Information is only used in auto depth enabled modes, which are locked out if no depth sensor present
+	if(!ap.depth_sensor_present) {
+		return;
+	}
+
+	current_depth = barometer.get_altitude() * 100; // cm
+
+	// get velocity in cm/s
+	Vector3f velocity = inertial_nav.get_velocity();
 
 	// check that we are not moving up or down
-	bool vel_stationary = velocity.z > -0.05 && velocity.z < 0.05;
+	bool vel_stationary = velocity.z > -3 && velocity.z < 3;
 
-	if (ap.depth_sensor_present) { // we can use the external pressure sensor for a very accurate and current measure of our z axis position
-		current_depth = barometer.get_altitude(); // cm
-
-
-		if(ap.at_surface) {
-			set_surfaced(current_depth > g.surface_depth/100.0 - 0.05); // add a 5cm buffer so it doesn't trigger too often
-		} else {
-			set_surfaced(current_depth > g.surface_depth/100.0); // If we are above surface depth, we are surfaced
-		}
-
-
-		if(motors.limit.throttle_lower && vel_stationary) {
-			// bottom criteria met - increment the counter and check if we've triggered
-			if( bottom_detector_count < ((float)BOTTOM_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
-				bottom_detector_count++;
-			} else {
-				set_bottomed(true);
-			}
-
-		} else {
-			set_bottomed(false);
-		}
-
-	// with no external baro, the only thing we have to go by is a vertical velocity estimate
-	} else if (vel_stationary) {
-		if(motors.limit.throttle_upper) {
-
+	if (vel_stationary) {
+		if(motors.limit.throttle_upper || pos_control.get_desired_velocity().z > 10) {
 			// surface criteria met, increment counter and see if we've triggered
 			if( surface_detector_count < ((float)SURFACE_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
 				surface_detector_count++;
@@ -59,7 +41,7 @@ void Sub::update_surface_and_bottom_detector()
 				set_surfaced(true);
 			}
 
-		} else if(motors.limit.throttle_lower) {
+		} else if(motors.limit.throttle_lower || pos_control.get_desired_velocity().z < -10) {
 			// bottom criteria met, increment counter and see if we've triggered
 			if( bottom_detector_count < ((float)BOTTOM_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
 				bottom_detector_count++;
@@ -88,9 +70,17 @@ void Sub::set_surfaced(bool at_surface) {
 	ap.at_surface = at_surface;
 
 	if(!ap.at_surface) {
-	    Log_Write_Event(DATA_SURFACED);
+		Log_Write_Event(DATA_SURFACED);
 		gcs_send_text(MAV_SEVERITY_INFO, "Off Surface");
 	} else {
+		// make sure we dont set ceiling so low in water that the vehicle can no longer come close to the surface
+		// this check is in case our motors go to the limits because we are stuck against the bottom of a boat, or otherwise
+		// hung up/snagged at depth
+		if(is_zero(barometer.get_baro_drift_offset()) && barometer.get_altitude() * 100 > -30) {
+			gcs_send_text(MAV_SEVERITY_INFO, "Setting barometer offset");
+			barometer.set_baro_drift_altitude(-barometer.get_altitude()); // offset barometer to read zero here
+			//barometer.set_ground_pressure();
+		}
 		surface_detector_count = 0;
 		Log_Write_Event(DATA_NOT_SURFACED);
 		gcs_send_text(MAV_SEVERITY_INFO, "Surfaced");
