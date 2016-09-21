@@ -189,6 +189,7 @@ void Sub::auto_takeoff_run()
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
+// Terrain altitude disabled
 void Sub::auto_wp_start(const Vector3f& destination)
 {
     auto_mode = Auto_WP;
@@ -204,6 +205,7 @@ void Sub::auto_wp_start(const Vector3f& destination)
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
+// Terrain altitude determined by dest_loc alt frame
 void Sub::auto_wp_start(const Location_Class& dest_loc)
 {
 	gcs_send_text(MAV_SEVERITY_INFO, "auto_wp_start");
@@ -229,7 +231,7 @@ void Sub::auto_wp_start(const Location_Class& dest_loc)
 void Sub::auto_wp_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    if (!motors.armed() || !motors.get_interlock()) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
         // call attitude controller
@@ -261,22 +263,12 @@ void Sub::auto_wp_run()
     ///////////////////////
     // update xy outputs //
 
-    // get roll and pitch targets in centidegrees
-	int32_t poshold_lateral = wp_nav.get_roll();
-	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
-
-	// constrain target forward/lateral values
-	// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
-	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
-	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
-
-	// Normalize
-	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
-	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
+    float lateral_out, forward_out;
+    translate_wpnav_rp(lateral_out, forward_out);
 
 	// Send to forward/lateral outputs
-//	motors.set_lateral(lateral_out);
-//	motors.set_forward(forward_out);
+	motors.set_lateral(lateral_out);
+	motors.set_forward(forward_out);
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -597,23 +589,12 @@ void Sub::auto_loiter_run()
 
     ///////////////////////
     // update xy outputs //
-
-    // get roll and pitch targets in centidegrees
-	int32_t poshold_lateral = wp_nav.get_roll();
-	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
-
-	// constrain target forward/lateral values
-	// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
-	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
-	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
-
-	// Normalize
-	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
-	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
+	float lateral_out, forward_out;
+	translate_wpnav_rp(lateral_out, forward_out);
 
 	// Send to forward/lateral outputs
-//	motors.set_lateral(lateral_out);
-//	motors.set_forward(forward_out);
+	motors.set_lateral(lateral_out);
+	motors.set_forward(forward_out);
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
@@ -897,23 +878,12 @@ void Sub::auto_terrain_recover_run() {
 
     ///////////////////////
     // update xy targets //
-
-    // get roll and pitch targets in centidegrees
-	int32_t poshold_lateral = wp_nav.get_roll();
-	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
-
-	// constrain target forward/lateral values
-	// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
-	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
-	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
-
-	// Normalize
-	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
-	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
+	float lateral_out, forward_out;
+	translate_wpnav_rp(lateral_out, forward_out);
 
 	// Send to forward/lateral outputs
-//	motors.set_lateral(lateral_out);
-//	motors.set_forward(forward_out);
+	motors.set_lateral(lateral_out);
+	motors.set_forward(forward_out);
 
 	/////////////////////
 	// update z target //
