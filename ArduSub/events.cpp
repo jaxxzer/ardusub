@@ -214,7 +214,6 @@ void Sub::failsafe_gcs_check()
 //  missing_data should be set to true if the vehicle failed to navigate because of missing data, false if navigation is proceeding successfully
 void Sub::failsafe_terrain_check()
 {
-	return;
     // trigger with 5 seconds of failures while in AUTO mode
     bool valid_mode = (control_mode == AUTO || control_mode == GUIDED || control_mode == RTL);
     bool timeout = (failsafe.terrain_last_failure_ms - failsafe.terrain_first_failure_ms) > FS_TERRAIN_TIMEOUT_MS;
@@ -223,7 +222,7 @@ void Sub::failsafe_terrain_check()
     // check for clearing of event
     if (trigger_event != failsafe.terrain) {
         if (trigger_event) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Failsafe triggered from events");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Failsafe terrain triggered");
             failsafe_terrain_on_event();
         } else {
             Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_ERROR_RESOLVED);
@@ -232,10 +231,11 @@ void Sub::failsafe_terrain_check()
     }
 }
 
+// This gets called if mission items are in ALT_ABOVE_TERRAIN frame
+// Terrain failure occurs when terrain data is not found, or rangefinder is not enabled or healthy
 // set terrain data status (found or not found)
 void Sub::failsafe_terrain_set_status(bool data_ok)
 {
-	return;
     uint32_t now = millis();
 
     // record time of first and latest failures (i.e. duration of failures)
@@ -256,20 +256,38 @@ void Sub::failsafe_terrain_set_status(bool data_ok)
 // terrain failsafe action
 void Sub::failsafe_terrain_on_event()
 {
-	return;
     failsafe.terrain = true;
-    gcs_send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    if (should_disarm_on_failsafe()) {
-    	gcs_send_text(MAV_SEVERITY_INFO, "fs_terrain disarm");
-        init_disarm_motors();
-    } else if (control_mode == RTL) {
-    	gcs_send_text(MAV_SEVERITY_INFO, "fs_terrain rtl");
-        rtl_restart_without_terrain();
-    } else {
-    	gcs_send_text(MAV_SEVERITY_INFO, "fs_terrain land");
-        set_mode_RTL_or_land_with_pause(MODE_REASON_TERRAIN_FAILSAFE);
+    // If rangefinder is enabled, we can recover from this failsafe
+    if(rangefinder_state.enabled) {
+    	if(auto_terrain_recover_start()) {
+    		// Successfully initiated recovery
+    		return;
+    	}
+    }
+
+
+}
+
+// Recovery failed, take action
+void Sub::failsafe_terrain_act() {
+    switch (g.failsafe_gcs) {
+    case FS_TERRAIN_HOLD:
+		if(!set_mode(POSHOLD, MODE_REASON_TERRAIN_FAILSAFE)) {
+			set_mode(ALT_HOLD, MODE_REASON_TERRAIN_FAILSAFE);
+		}
+		AP_Notify::events.failsafe_mode_change = 1;
+		break;
+
+    case FS_TERRAIN_SURFACE:
+		set_mode(SURFACE, MODE_REASON_TERRAIN_FAILSAFE);
+    	AP_Notify::events.failsafe_mode_change = 1;
+		break;
+
+    case FS_TERRAIN_DISARM:
+    default:
+		init_disarm_motors();
     }
 }
 

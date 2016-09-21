@@ -395,7 +395,9 @@ public:
 		k_param_failsafe_pressure, // internal pressure failsafe behavior
 		k_param_failsafe_pressure_max, // maximum internal pressure in pascal before failsafe is triggered
 		k_param_failsafe_temperature, // internal temperature failsafe behavior
-		k_param_failsafe_temperature_max // maximum internal temperature in degrees C before failsafe is triggered
+		k_param_failsafe_temperature_max, // maximum internal temperature in degrees C before failsafe is triggered
+
+		k_param_failsafe_terrain // terrain failsafe behavior
     };
 
     AP_Int16        format_version;
@@ -430,6 +432,7 @@ public:
     AP_Int8			failsafe_temperature;
     AP_Int32		failsafe_pressure_max;
     AP_Int8			failsafe_temperature_max;
+    AP_Int8			failsafe_terrain;
 
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 

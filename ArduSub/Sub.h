@@ -564,6 +564,7 @@ private:
 
 	uint32_t last_pilot_heading;
 	uint32_t last_pilot_yaw_input_ms;
+	uint32_t fs_terrain_recover_start_ms = 0;
 
 #if GNDEFFECT_COMPENSATION == ENABLED
     // ground effect detector
@@ -1047,6 +1048,10 @@ private:
     void set_leak_status(bool status);
     void failsafe_internal_pressure_check();
     void failsafe_internal_temperature_check();
+
+    void failsafe_terrain_act(void);
+    bool auto_terrain_recover_start(void);
+    void auto_terrain_recover_run(void);
 
     bool surface_init(bool ignore_flags);
     void surface_run();

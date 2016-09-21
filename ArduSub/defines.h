@@ -209,7 +209,8 @@ enum AutoMode {
     Auto_Circle,
     Auto_Spline,
     Auto_NavGuided,
-    Auto_Loiter
+    Auto_Loiter,
+	Auto_TerrainRecover
 };
 
 // Guided modes
@@ -467,16 +468,25 @@ enum ThrowModeState {
 #define FS_LEAK_SURFACE		2 // Switch to surface mode
 
 // Internal pressure failsafe threshold (FS_PRESS_MAX parameter)
-#define FS_PRESS_MAX_DEFAULT 105000 // Maximum internal pressure in pascal before failsafe is triggered
+#define FS_PRESS_MAX_DEFAULT	105000 // Maximum internal pressure in pascal before failsafe is triggered
 // Internal pressure failsafe definitions (FS_PRESS_ENABLE parameter)
-#define FS_PRESS_DISABLED 0
-#define FS_PRESS_WARN_ONLY 1
+#define FS_PRESS_DISABLED		0
+#define FS_PRESS_WARN_ONLY		1
 
 // Internal temperature failsafe threshold (FS_TEMP_MAX parameter)
-#define FS_TEMP_MAX_DEFAULT 62	// Maximum internal pressure in degrees C before failsafe is triggered
+#define FS_TEMP_MAX_DEFAULT		62	// Maximum internal pressure in degrees C before failsafe is triggered
 // Internal temperature failsafe definitions (FS_TEMP_ENABLE parameter)
-#define FS_TEMP_DISABLED 0
-#define FS_TEMP_WARN_ONLY 1
+#define FS_TEMP_DISABLED		0
+#define FS_TEMP_WARN_ONLY		1
+
+// Terrain failsafe actions for AUTO mode
+#define FS_TERRAIN_DISARM		0
+#define FS_TERRAIN_HOLD			1
+#define FS_TERRAIN_SURFACE		2
+
+// Amount of time to attempt recovery of valid rangefinder data before
+// initiating terrain failsafe action
+#define FS_TERRAIN_RECOVER_TIMEOUT_MS 10000
 
 // EKF failsafe definitions (FS_EKF_ENABLE parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe

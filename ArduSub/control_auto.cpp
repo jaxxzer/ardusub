@@ -46,7 +46,8 @@ bool Sub::auto_init(bool ignore_checks)
         guided_limit_clear();
 
         // start/resume the mission (based on MIS_RESTART parameter)
-        mission.start_or_resume();
+		mission.start_or_resume();
+
         return true;
 //    }else{
 //        return false;
@@ -95,7 +96,12 @@ void Sub::auto_run()
     case Auto_Loiter:
         auto_loiter_run();
         break;
+
+    case Auto_TerrainRecover:
+    	auto_terrain_recover_run();
+    	break;
     }
+
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
@@ -802,7 +808,7 @@ float Sub::get_auto_heading(void)
         break;
 
     case AUTO_YAW_CORRECT_XTRACK:
-    	// Get the bearing from the current position to intermediate position target
+    	// Get the bearing from the current position to intermediate position target along track
 		return wp_nav.get_loiter_bearing_to_target();
     	break;
 
@@ -817,3 +823,114 @@ float Sub::get_auto_heading(void)
     }
 }
 
+// Return true if it is possible to recover from a rangefinder failure
+bool Sub::auto_terrain_recover_start() {
+	// Check rangefinder status to see if recovery is possible
+	switch(rangefinder.status()) {
+	case RangeFinder::RangeFinder_OutOfRangeLow:
+	case RangeFinder::RangeFinder_OutOfRangeHigh:
+		auto_mode = Auto_TerrainRecover;
+		break;
+	default:
+		return false; // Rangefinder is not connected, or has stopped responding
+	}
+
+	// Initialize recovery timeout time
+	fs_terrain_recover_start_ms = AP_HAL::millis();
+
+	// Stop mission
+	mission.stop();
+
+	// Reset xy target
+	wp_nav.init_loiter_target();
+
+	// Reset z axis controller
+	pos_control.relax_alt_hold_controllers(0.0);
+
+    // initialize vertical speeds and leash lengths
+    pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_accel_z(wp_nav.get_accel_z());
+
+    // Reset vertical position and velocity targets
+    pos_control.set_alt_target(inertial_nav.get_altitude());
+    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+
+	gcs_send_text(MAV_SEVERITY_INFO, "Attempting auto failsafe recovery");
+	return true;
+}
+
+// Attempt recovery from terrain failsafe
+// If recovery is successful resume mission
+// If recovery fails revert to failsafe action
+void Sub::auto_terrain_recover_run() {
+	float target_climb_rate = 0;
+
+	switch(rangefinder.status()) {
+	case RangeFinder::RangeFinder_OutOfRangeLow:
+		target_climb_rate = wp_nav.get_speed_up();
+		break;
+	case RangeFinder::RangeFinder_OutOfRangeHigh:
+		target_climb_rate = wp_nav.get_speed_down();
+		break;
+	case RangeFinder::RangeFinder_Good: // exit on success (recovered rangefinder data)
+		failsafe.terrain = false; // Clear flag
+		auto_mode = Auto_Loiter; // Switch back to loiter for next iteration
+		mission.resume(); // Resume mission
+		break;
+	default:
+		// Terrain failsafe recovery has failed, terrain data is not available
+		// and rangefinder is not connected, or has stopped responding
+		gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
+		failsafe_terrain_act();
+		return;
+	}
+
+	// exit on failure (timeout)
+	if(AP_HAL::millis() > fs_terrain_recover_start_ms + FS_TERRAIN_RECOVER_TIMEOUT_MS) {
+		// Recovery has failed, revert to failsafe action
+		gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery timeout!");
+		failsafe_terrain_act();
+	}
+
+	// run loiter controller
+	wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+
+    ///////////////////////
+    // update xy targets //
+
+    // get roll and pitch targets in centidegrees
+	int32_t poshold_lateral = wp_nav.get_roll();
+	int32_t poshold_forward = -wp_nav.get_pitch(); // output is reversed
+
+	// constrain target forward/lateral values
+	// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
+	poshold_lateral = constrain_int16(poshold_lateral, -aparm.angle_max, aparm.angle_max);
+	poshold_forward = constrain_int16(poshold_forward, -aparm.angle_max, aparm.angle_max);
+
+	// Normalize
+	float lateral_out = (float)poshold_lateral/(float)aparm.angle_max;
+	float forward_out = (float)poshold_forward/(float)aparm.angle_max;
+
+	// Send to forward/lateral outputs
+//	motors.set_lateral(lateral_out);
+//	motors.set_forward(forward_out);
+
+	/////////////////////
+	// update z target //
+	pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, true);
+	pos_control.update_z_controller();
+
+	////////////////////////////
+	// update angular targets //
+	float target_roll = 0;
+	float target_pitch = 0;
+
+	// convert pilot input to lean angles
+	// To-Do: convert get_pilot_desired_lean_angles to return angles as floats
+	get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+
+	float target_yaw_rate = 0;
+
+	// call attitude controller
+	attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+}
