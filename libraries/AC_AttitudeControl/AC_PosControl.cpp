@@ -172,7 +172,7 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
     // do not let target alt get above limit
-    if (_alt_max < 0 && _alt_max > _alt_min && _pos_target.z > _alt_max) {
+    if (_alt_max > _alt_min && _pos_target.z > _alt_max) {
         _pos_target.z = _alt_max;
         _limit.pos_up = true;
     }
