@@ -854,7 +854,6 @@ private:
     void failsafe_terrain_check();
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
-    void set_mode_RTL_or_land_with_pause(mode_reason_t reason);
     void update_events();
     void failsafe_enable();
     void failsafe_disable();

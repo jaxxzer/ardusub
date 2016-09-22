@@ -288,20 +288,6 @@ void Sub::failsafe_terrain_act() {
     }
 }
 
-// set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
-//  this is always called from a failsafe so we trigger notification to pilot
-void Sub::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
-{
-//    // attempt to switch to RTL, if this fails then switch to Land
-//    if (!set_mode(RTL, reason)) {
-//        // set mode to land will trigger mode change notification to pilot
-//        set_mode_land_with_pause(reason);
-//    } else {
-//        // alert pilot to mode change
-//        AP_Notify::events.failsafe_mode_change = 1;
-//    }
-}
-
 bool Sub::should_disarm_on_failsafe() {
     switch(control_mode) {
         case STABILIZE:
