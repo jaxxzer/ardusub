@@ -808,10 +808,17 @@ float Sub::get_auto_heading(void)
 bool Sub::auto_terrain_recover_start() {
 	// Check rangefinder status to see if recovery is possible
 	switch(rangefinder.status()) {
+
 	case RangeFinder::RangeFinder_OutOfRangeLow:
 	case RangeFinder::RangeFinder_OutOfRangeHigh:
+
+	// RangeFinder_Good if just one valid sample was obtained recently, but ::rangefinder_state.alt_healthy
+	// requires several consecutive valid readings for wpnav to accept rangefinder data
+	case RangeFinder::RangeFinder_Good:
 		auto_mode = Auto_TerrainRecover;
 		break;
+
+	// Not connected or no data
 	default:
 		return false; // Rangefinder is not connected, or has stopped responding
 	}
@@ -836,7 +843,7 @@ bool Sub::auto_terrain_recover_start() {
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
-	gcs_send_text(MAV_SEVERITY_INFO, "Attempting auto failsafe recovery");
+	gcs_send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
 	return true;
 }
 
@@ -845,24 +852,59 @@ bool Sub::auto_terrain_recover_start() {
 // If recovery fails revert to failsafe action
 void Sub::auto_terrain_recover_run() {
 	float target_climb_rate = 0;
+	static uint32_t rangefinder_recovery_ms = 0;
+
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed() || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        return;
+    }
 
 	switch(rangefinder.status()) {
+
 	case RangeFinder::RangeFinder_OutOfRangeLow:
 		target_climb_rate = wp_nav.get_speed_up();
+		rangefinder_recovery_ms = 0;
 		break;
+
 	case RangeFinder::RangeFinder_OutOfRangeHigh:
 		target_climb_rate = wp_nav.get_speed_down();
+		rangefinder_recovery_ms = 0;
 		break;
+
 	case RangeFinder::RangeFinder_Good: // exit on success (recovered rangefinder data)
-		failsafe.terrain = false; // Clear flag
-		auto_mode = Auto_Loiter; // Switch back to loiter for next iteration
-		mission.resume(); // Resume mission
+
+		target_climb_rate = 0; // Attempt to hold current depth
+
+		if(rangefinder_state.alt_healthy) {
+
+			// Start timer as soon as rangefinder is healthy
+			if(rangefinder_recovery_ms == 0) {
+				rangefinder_recovery_ms = AP_HAL::millis();
+				pos_control.relax_alt_hold_controllers(0.0); // Reset alt hold targets
+			}
+
+			// 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled
+			if(AP_HAL::millis() > rangefinder_recovery_ms + 1500) {
+				gcs_send_text(MAV_SEVERITY_INFO, "Terrain failsafe recovery successful!");
+				failsafe_terrain_set_status(true); // Reset failsafe timers
+				failsafe.terrain = false; // Clear flag
+				auto_mode = Auto_Loiter; // Switch back to loiter for next iteration
+				mission.resume(); // Resume mission
+				rangefinder_recovery_ms = 0; // Reset for subsequent recoveries
+			}
+
+		}
 		break;
+
+	// Not connected, or no data
 	default:
 		// Terrain failsafe recovery has failed, terrain data is not available
 		// and rangefinder is not connected, or has stopped responding
 		gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
 		failsafe_terrain_act();
+		rangefinder_recovery_ms = 0;
 		return;
 	}
 

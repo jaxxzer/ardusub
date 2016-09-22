@@ -260,11 +260,8 @@ void Sub::failsafe_terrain_on_event()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // If rangefinder is enabled, we can recover from this failsafe
-    if(rangefinder_state.enabled) {
-    	if(auto_terrain_recover_start()) {
-    		// Successfully initiated recovery
-    		return;
-    	}
+    if(!rangefinder_state.enabled || !auto_terrain_recover_start()) {
+    	failsafe_terrain_act();
     }
 
 
@@ -272,7 +269,7 @@ void Sub::failsafe_terrain_on_event()
 
 // Recovery failed, take action
 void Sub::failsafe_terrain_act() {
-    switch (g.failsafe_gcs) {
+    switch (g.failsafe_terrain) {
     case FS_TERRAIN_HOLD:
 		if(!set_mode(POSHOLD, MODE_REASON_TERRAIN_FAILSAFE)) {
 			set_mode(ALT_HOLD, MODE_REASON_TERRAIN_FAILSAFE);
