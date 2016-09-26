@@ -704,6 +704,41 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         }
     }
 
+    Vector3f track_desired_pos = _pos_delta_unit * _track_desired;
+
+	static uint32_t last_msg_ms = 0;
+	if(AP_HAL::millis() > last_msg_ms + 500) {
+		last_msg_ms = AP_HAL::millis();
+		mavlink_msg_command_long_send(
+				(mavlink_channel_t)0, //channel
+				0, //target system
+				0, //target component
+				47, //command
+				0, //confirmation
+				get_loiter_bearing_to_target(),//1
+				get_loiter_distance_to_target(),
+				get_bearing_cd(curr_pos, _origin+track_covered_pos),
+				norm(curr_pos.x-(_origin+track_covered_pos).x, curr_pos.y-(_origin+track_covered_pos).y),
+				get_bearing_cd(curr_pos, _origin+track_desired_pos),
+				norm(curr_pos.x-(_origin+track_desired_pos).x, curr_pos.y-(_origin+track_desired_pos).y),
+				_track_desired);
+		mavlink_msg_command_long_send(
+				(mavlink_channel_t)0, //channel
+				0, //target system
+				0, //target component
+				48, //command
+				0, //confirmation
+				_origin.x,//1
+				_origin.y,
+				_origin.z,
+				_pos_delta_unit.x,
+				_pos_delta_unit.y,
+				_pos_delta_unit.z,
+				0);
+
+
+	}
+
     // successfully advanced along track
     return true;
 }
