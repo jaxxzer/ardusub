@@ -249,9 +249,6 @@ void Sub::auto_wp_run()
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
-        }
     }
 
     // set motors to full range
@@ -283,16 +280,16 @@ void Sub::auto_wp_run()
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
-    	if(AP_HAL::millis() > last_auto_msg_ms + 2500) {
+    	if(AP_HAL::millis() > last_auto_msg_ms + 10000) {
     		last_auto_msg_ms = AP_HAL::millis();
     		gcs_send_text(MAV_SEVERITY_INFO, "wp: hold yaw");
     	}
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
     }else{
-    	if(AP_HAL::millis() > last_auto_msg_ms + 2500) {
+    	if(AP_HAL::millis() > last_auto_msg_ms + 10000) {
     		last_auto_msg_ms = AP_HAL::millis();
-    		gcs_send_text_fmt(MAV_SEVERITY_INFO, "wp: target_yaw: %f", get_auto_heading());
+    		gcs_send_text_fmt(MAV_SEVERITY_INFO, "wp: target_yaw: %f, %d", get_auto_heading(), get_default_auto_yaw_mode(false));
     	}
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(), true, get_smoothing_gain());

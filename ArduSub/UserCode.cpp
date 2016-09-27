@@ -41,12 +41,9 @@ void Sub::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Sub::userhook_SuperSlowLoop()
 {
-	static uint32_t last_msg_ms = 0;
-	if(AP_HAL::millis() > last_msg_ms + 10000) {
-		last_msg_ms = AP_HAL::millis();
-		gcs_send_text_fmt(MAV_SEVERITY_INFO, "Baro: %f", barometer.get_altitude() * 100.0f);
-		gcs_send_text_fmt(MAV_SEVERITY_INFO, "Inav: %f", inertial_nav.get_altitude());
-//		gcs_send_text_fmt(MAV_SEVERITY_INFO, "Currentloc: ")
-	}
+//	static uint32_t last_msg_ms = 0;
+//	if(AP_HAL::millis() > last_msg_ms + 10000) {
+//		last_msg_ms = AP_HAL::millis();
+//	}
 }
 #endif
