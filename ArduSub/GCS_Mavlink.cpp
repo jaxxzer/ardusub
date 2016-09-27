@@ -292,7 +292,8 @@ void NOINLINE Sub::send_location(mavlink_channel_t chan)
         vel.x,                          // X speed cm/s (+ve North)
         vel.y,                          // Y speed cm/s (+ve East)
         vel.z,                          // Z speed cm/s (+ve up)
-        ahrs.yaw_sensor);               // compass heading in 1/100 degree
+//        ahrs.yaw_sensor);               // compass heading in 1/100 degree
+        get_auto_heading());               // compass heading in 1/100 degree
 }
 
 void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
@@ -2016,10 +2017,21 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SYS_STATUS:
     	uint32_t MAV_SENSOR_WATER = 0x20000000;
+    	uint32_t MAV_SENSOR_TEMPERATURE = 0x40000000;
+
     	mavlink_sys_status_t packet;
     	mavlink_msg_sys_status_decode(msg, &packet);
-    	if((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER))
+    	if((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)) {
     		sub.water_detector.set_detect();
+    	}
+
+    	if(packet.onboard_control_sensors_enabled & MAV_SENSOR_TEMPERATURE) {
+    		if(!(packet.onboard_control_sensors_health & MAV_SENSOR_TEMPERATURE)) {
+    			sub.failsafe.internal_temperature = true;
+    		} else {
+    			sub.failsafe.internal_temperature = false;
+    		}
+    	}
     	break;
 
     }     // end switch
