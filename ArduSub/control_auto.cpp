@@ -24,8 +24,10 @@ namespace {
 // auto_init - initialise auto controller
 bool Sub::auto_init(bool ignore_checks)
 {
-    //if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
+    if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
+
+        // Sub does not require takeoff
 
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce change of flips)
 //        if (motors.armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
@@ -49,9 +51,9 @@ bool Sub::auto_init(bool ignore_checks)
 		mission.start_or_resume();
 
         return true;
-//    }else{
-//        return false;
-//    }
+    }else{
+        return false;
+    }
 }
 
 // auto_run - runs the auto controller
@@ -537,9 +539,9 @@ void Sub::auto_nav_guided_run()
 bool Sub::auto_loiter_start()
 {
     // return failure if GPS is bad
-//    if (!position_ok()) {
-//        return false;
-//    }
+    if (!position_ok()) {
+        return false;
+    }
     auto_mode = Auto_Loiter;
 
     Vector3f origin = inertial_nav.get_position();
@@ -553,7 +555,7 @@ bool Sub::auto_loiter_start()
     wp_nav.set_wp_origin_and_destination(origin, stopping_point);
 
     // hold yaw at current heading
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
     gcs_send_text(MAV_SEVERITY_INFO, "auto_loiter_start");
 
     return true;
@@ -786,8 +788,17 @@ float Sub::get_auto_heading(void)
         break;
 
     case AUTO_YAW_CORRECT_XTRACK:
-    	// Get the bearing from the current position to intermediate position target along track
-		return wp_nav.get_loiter_bearing_to_target();
+    	{
+    		// Bearing of current track (centidegrees)
+			float track_bearing = wp_nav.get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
+
+			// Bearing from current position towards intermediate position target (centidegrees)
+			float desired_angle = wp_nav.get_loiter_bearing_to_target();
+
+			float angle_error = wrap_180_cd(desired_angle - track_bearing);
+			float angle_limited = constrain_float(angle_error, -g.xtrack_angle_limit * 100.0f, g.xtrack_angle_limit * 100.0f);
+			return wrap_360_cd(track_bearing + angle_limited);
+    	}
     	break;
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
