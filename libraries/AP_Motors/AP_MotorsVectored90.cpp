@@ -21,11 +21,11 @@
 #include "AP_MotorsVectored90.h"
 
 /*
-|5    <1>    6|
+|1    <4>    6|
 |             |
-|3           4|
+|2           7|
 |             |
-|7    <2>    8|
+|3    <5>    8|
 */
 
 // setup_motors - configures the motors for the frame
@@ -36,45 +36,45 @@ void AP_MotorsVectored90::setup_motors()
 
 	// hard coded config for 90 degree vectored 6DOF frame
 	float
-		//Lateral
-		MOT_1_ROLL_FACTOR = 0,
-		MOT_1_PITCH_FACTOR = 0,
+		//Front Left
+		MOT_1_ROLL_FACTOR = 1.0,
+		MOT_1_PITCH_FACTOR = 1.0,
 		MOT_1_YAW_FACTOR = 0,
-		MOT_1_THROTTLE_FACTOR = 0,
+		MOT_1_THROTTLE_FACTOR = 1.0,
 		MOT_1_FORWARD_FACTOR = 0,
-		MOT_1_STRAFE_FACTOR = 1.0,
+		MOT_1_STRAFE_FACTOR = 0,
 
-		//Lateral
+		//Forward/yaw
 		MOT_2_ROLL_FACTOR = 0,
 		MOT_2_PITCH_FACTOR = 0,
-		MOT_2_YAW_FACTOR = 0,
+		MOT_2_YAW_FACTOR = 1.0,
 		MOT_2_THROTTLE_FACTOR = 0,
-		MOT_2_FORWARD_FACTOR = 0,
-		MOT_2_STRAFE_FACTOR = 1.0,
+		MOT_2_FORWARD_FACTOR = 1.0,
+		MOT_2_STRAFE_FACTOR = 0,
 
-		//Forward/yaw
-		MOT_3_ROLL_FACTOR = 0,
-		MOT_3_PITCH_FACTOR = 0,
-		MOT_3_YAW_FACTOR = 1.0,
-		MOT_3_THROTTLE_FACTOR = 0,
-		MOT_3_FORWARD_FACTOR = 1.0,
+		//Back Left
+		MOT_3_ROLL_FACTOR = 1.0,
+		MOT_3_PITCH_FACTOR = -1.0,
+		MOT_3_YAW_FACTOR = 0,
+		MOT_3_THROTTLE_FACTOR = 1.0,
+		MOT_3_FORWARD_FACTOR = 0,
 		MOT_3_STRAFE_FACTOR = 0,
 
-		//Forward/yaw
+		//Lateral
 		MOT_4_ROLL_FACTOR = 0,
 		MOT_4_PITCH_FACTOR = 0,
-		MOT_4_YAW_FACTOR = -1.0,
+		MOT_4_YAW_FACTOR = 0,
 		MOT_4_THROTTLE_FACTOR = 0,
-		MOT_4_FORWARD_FACTOR = 1.0,
-		MOT_4_STRAFE_FACTOR = 0,
+		MOT_4_FORWARD_FACTOR = 0,
+		MOT_4_STRAFE_FACTOR = 1.0,
 
-		//Front Left
-		MOT_5_ROLL_FACTOR = 1.0,
-		MOT_5_PITCH_FACTOR = 1.0,
+		//Lateral
+		MOT_5_ROLL_FACTOR = 0,
+		MOT_5_PITCH_FACTOR = 0,
 		MOT_5_YAW_FACTOR = 0,
-		MOT_5_THROTTLE_FACTOR = 1.0,
+		MOT_5_THROTTLE_FACTOR = 0,
 		MOT_5_FORWARD_FACTOR = 0,
-		MOT_5_STRAFE_FACTOR = 0,
+		MOT_5_STRAFE_FACTOR = 1.0,
 
 		//Front Right
 		MOT_6_ROLL_FACTOR = -1.0,
@@ -84,12 +84,12 @@ void AP_MotorsVectored90::setup_motors()
 		MOT_6_FORWARD_FACTOR = 0,
 		MOT_6_STRAFE_FACTOR = 0,
 
-		//Back Left
-		MOT_7_ROLL_FACTOR = 1.0,
-		MOT_7_PITCH_FACTOR = -1.0,
-		MOT_7_YAW_FACTOR = 0,
-		MOT_7_THROTTLE_FACTOR = 1.0,
-		MOT_7_FORWARD_FACTOR = 0,
+		//Forward/yaw
+		MOT_7_ROLL_FACTOR = 0,
+		MOT_7_PITCH_FACTOR = 0,
+		MOT_7_YAW_FACTOR = -1.0,
+		MOT_7_THROTTLE_FACTOR = 0,
+		MOT_7_FORWARD_FACTOR = 1.0,
 		MOT_7_STRAFE_FACTOR = 0,
 
 		//Back Right
