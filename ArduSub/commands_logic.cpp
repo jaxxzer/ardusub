@@ -61,6 +61,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
     // conditional commands
     //
     case MAV_CMD_CONDITION_DELAY:             // 112
+    	gcs_send_text(MAV_SEVERITY_CRITICAL, "Auto: cond delay");
         do_wait_delay(cmd);
         break;
 
@@ -69,6 +70,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_CONDITION_YAW:             // 115
+    	gcs_send_text(MAV_SEVERITY_CRITICAL, "Auto: cond yaw");
         do_yaw(cmd);
         break;
 
@@ -182,6 +184,7 @@ bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 //  called at 10hz or higher
 bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 {
+	static uint32_t last_msg = 0;
     switch(cmd.id) {
 
     //
@@ -244,10 +247,15 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 // exit_mission - function that is called once the mission completes
 void Sub::exit_mission()
 {
+	gcs_send_text(MAV_SEVERITY_INFO, "Mission Complete!");
+
     // play a tone
     AP_Notify::events.mission_complete = 1;
 
-	init_disarm_motors();
+    // Try to enter loiter, if that fails, go to depth hold
+    if(!auto_loiter_start()) {
+        set_mode(ALT_HOLD, MODE_REASON_MISSION_END);
+    }
 }
 
 /********************************************************************************/
@@ -349,6 +357,12 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 	// convert back to location
 	Location_Class target_loc(cmd.content.location);
 
+	// In mavproxy misseditor: Abs = 0 = ALT_FRAME_ABSOLUTE
+	//                         Rel = 1 = ALT_FRAME_ABOVE_HOME
+	//                         AGL = 3 = ALT_FRAME_ABOVE_TERRAIN
+	//    2 = ALT_FRAME_ABOVE_ORIGIN, not an option in mavproxy misseditor
+	gcs_send_text_fmt(MAV_SEVERITY_INFO, "do_loiter_unlimited, target alt frame is: %d", target_loc.get_alt_frame());
+
     // use current location if not provided
 	if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
@@ -359,19 +373,26 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         target_loc.lng = temp_loc.lng;
     }
 
+
     // use current altitude if not provided
     // To-Do: use z-axis stopping point instead of current alt
 	if (target_loc.alt == 0) {
         // set to current altitude but in command's alt frame
         int32_t curr_alt;
         if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
+        	gcs_send_text(MAV_SEVERITY_INFO, "Set target alt to command frame");
             target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
         } else {
             // default to current altitude as alt-above-home
+        	gcs_send_text(MAV_SEVERITY_INFO, "Set target alt to alt-above-home");
             target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
     }
-
+	int32_t current_altitude;
+	current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, current_altitude);
+	int32_t target_altitude;
+	target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, target_altitude);
+	gcs_send_text_fmt(MAV_SEVERITY_INFO, "cur alt abh: %d, tgt alt abh: %d", current_altitude, target_altitude);
     // start way point navigator and provide it the desired location
     auto_wp_start(target_loc);
 }
@@ -658,8 +679,13 @@ bool Sub::verify_loiter_unlimited()
 // verify_loiter_time - check if we have loitered long enough
 bool Sub::verify_loiter_time()
 {
+	static uint32_t last_msg_ms = 0;
     // return immediately if we haven't reached our destination
     if (!wp_nav.reached_wp_destination()) {
+    	if(AP_HAL::millis() > last_msg_ms + 10000) {
+    		last_msg_ms = AP_HAL::millis();
+    		gcs_send_text(MAV_SEVERITY_INFO, "verify_loiter_time: wp not reached");
+    	}
         return false;
     }
 
@@ -668,6 +694,10 @@ bool Sub::verify_loiter_time()
         loiter_time = millis();
     }
 
+	if(AP_HAL::millis() > last_msg_ms + 2500) {
+		last_msg_ms = AP_HAL::millis();
+		gcs_send_text_fmt(MAV_SEVERITY_INFO, "verify loiter time: %d", millis() - loiter_time);
+	}
     // check if loiter timer has run out
     return (((millis() - loiter_time) / 1000) >= loiter_time_max);
 }

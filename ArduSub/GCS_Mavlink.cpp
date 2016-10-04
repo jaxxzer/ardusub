@@ -2016,10 +2016,21 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SYS_STATUS:
     	uint32_t MAV_SENSOR_WATER = 0x20000000;
+    	uint32_t MAV_SENSOR_TEMPERATURE = 0x40000000;
+
     	mavlink_sys_status_t packet;
     	mavlink_msg_sys_status_decode(msg, &packet);
-    	if((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER))
+    	if((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)) {
     		sub.water_detector.set_detect();
+    	}
+
+    	if(packet.onboard_control_sensors_enabled & MAV_SENSOR_TEMPERATURE) {
+    		if(!(packet.onboard_control_sensors_health & MAV_SENSOR_TEMPERATURE)) {
+    			sub.failsafe.internal_temperature = true;
+    		} else {
+    			sub.failsafe.internal_temperature = false;
+    		}
+    	}
     	break;
 
     }     // end switch

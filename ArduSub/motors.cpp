@@ -153,12 +153,14 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     initial_armed_bearing = ahrs.yaw_sensor;
 
     if (ap.home_state == HOME_UNSET) {
+    	gcs_send_text(MAV_SEVERITY_INFO, "Home unset");
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        
-        // Always use absolute altitude for ROV
-		// ahrs.resetHeightDatum();
-		// Log_Write_Event(DATA_EKF_ALT_RESET);
+
+        // Always use absolute altitude (depth) for ROV
+//		ahrs.resetHeightDatum();
+//		Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+    	gcs_send_text(MAV_SEVERITY_INFO, "Home set not locked");
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location();
     }
@@ -292,4 +294,20 @@ void Sub::lost_vehicle_check()
             AP_Notify::flags.vehicle_lost = false;
         }
     }
+}
+
+// translate wpnav roll/pitch outputs to lateral/forward
+void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out) {
+	   // get roll and pitch targets in centidegrees
+		int32_t lateral = wp_nav.get_roll();
+		int32_t forward = -wp_nav.get_pitch(); // output is reversed
+
+		// constrain target forward/lateral values
+		// The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
+		lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
+		forward = constrain_int16(forward, -aparm.angle_max, aparm.angle_max);
+
+		// Normalize
+		lateral_out = (float)lateral/(float)aparm.angle_max;
+		forward_out = (float)forward/(float)aparm.angle_max;
 }

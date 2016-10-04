@@ -28,6 +28,7 @@ void Sub::update_home_from_EKF()
 
 // set_home_to_current_location_inflight - set home to current GPS location (horizontally) and EKF origin vertically
 void Sub::set_home_to_current_location_inflight() {
+	//gcs_send_text(MAV_SEVERITY_INFO, "set_home_to_current_location_inflight");
     // get current location from EKF
     Location temp_loc;
     if (inertial_nav.get_location(temp_loc)) {
@@ -39,9 +40,17 @@ void Sub::set_home_to_current_location_inflight() {
 
 // set_home_to_current_location - set home to current GPS location
 bool Sub::set_home_to_current_location() {
+	//gcs_send_text(MAV_SEVERITY_INFO, "set_home_to_current_location");
     // get current location from EKF
     Location temp_loc;
     if (inertial_nav.get_location(temp_loc)) {
+
+    	// Make home always at the water's surface.
+    	// This allows disarming and arming again at depth.
+    	// This also ensures that mission items with relative altitude frame, are always
+    	// relative to the water's surface, whether in a high elevation lake, or at sea level.
+    	temp_loc.alt -= barometer.get_altitude() * 100.0f;
+    	gcs_send_text_fmt(MAV_SEVERITY_INFO, "Home x %d y %d z %d", temp_loc.lat, temp_loc.lng, temp_loc.alt);
         return set_home(temp_loc);
     }
     return false;
@@ -50,6 +59,8 @@ bool Sub::set_home_to_current_location() {
 // set_home_to_current_location_and_lock - set home to current location and lock so it cannot be moved
 bool Sub::set_home_to_current_location_and_lock()
 {
+	gcs_send_text(MAV_SEVERITY_INFO, "set_home_to_current_location_and_lock");
+
     if (set_home_to_current_location()) {
         set_home_state(HOME_SET_AND_LOCKED);
         return true;
@@ -61,6 +72,8 @@ bool Sub::set_home_to_current_location_and_lock()
 //  unless this function is called again
 bool Sub::set_home_and_lock(const Location& loc)
 {
+	gcs_send_text(MAV_SEVERITY_INFO, "set_home_and_lock");
+
     if (set_home(loc)) {
         set_home_state(HOME_SET_AND_LOCKED);
         return true;
@@ -73,12 +86,15 @@ bool Sub::set_home_and_lock(const Location& loc)
 //  returns true if home location set successfully
 bool Sub::set_home(const Location& loc)
 {
+	gcs_send_text(MAV_SEVERITY_INFO, "set_home");
+
     // check location is valid
     if (loc.lat == 0 && loc.lng == 0) {
         return false;
     }
 
     // set ahrs home (used for RTL)
+    gcs_send_text(MAV_SEVERITY_INFO, "ahrs.set_home");
     ahrs.set_home(loc);
 
     // init inav and compass declination

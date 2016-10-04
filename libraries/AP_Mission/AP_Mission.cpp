@@ -5,6 +5,7 @@
 
 #include "AP_Mission.h"
 #include <AP_Terrain/AP_Terrain.h>
+#include <stdio.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -783,6 +784,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
             return MAV_MISSION_INVALID_PARAM7;
         }
 
+        //!!!!
         switch (packet.frame) {
 
         case MAV_FRAME_MISSION:
@@ -1300,6 +1302,7 @@ bool AP_Mission::advance_current_nav_cmd()
     while (!_flags.nav_cmd_loaded) {
         // get next command
         if (!get_next_cmd(cmd_index, cmd, true)) {
+        	::printf("!get_next_cmd");
             return false;
         }
 
@@ -1325,6 +1328,7 @@ bool AP_Mission::advance_current_nav_cmd()
             } else {
                 // protect against endless loops of do-commands
                 if (max_loops-- == 0) {
+                	::printf("endless loop");
                     return false;
                 }
             }

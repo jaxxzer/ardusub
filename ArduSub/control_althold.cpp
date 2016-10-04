@@ -89,7 +89,9 @@ void Sub::althold_run()
 	}
 
 	// adjust climb rate using rangefinder
-	if (rangefinder_alt_ok()) {
+	if(rangefinder_state.enabled && rangefinder.status() == RangeFinder::RangeFinder_OutOfRangeLow) {
+		target_climb_rate = wp_nav.get_speed_up();
+	} else if (rangefinder_alt_ok()) {
 		// if rangefinder is ok, use surface tracking
 		target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
 	}
@@ -99,7 +101,7 @@ void Sub::althold_run()
 		pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
 		pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
 	} else {
-		if(inertial_nav.get_altitude() < g.surface_depth) { // pilot allowed to move up or down freely
+		if(barometer.get_altitude() * 100.0f < g.surface_depth) { // pilot allowed to move up or down freely
 			pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
 		} else if(target_climb_rate < 0) { // pilot allowed to move only down freely
 			if(pos_control.get_vel_target_z() > 0) {
@@ -109,6 +111,8 @@ void Sub::althold_run()
 		} else if(pos_control.get_alt_target() > g.surface_depth) { // hold depth at surface level.
 			pos_control.set_alt_target(g.surface_depth);
 		}
+
+		// Nothing to do, alt target does not change
 	}
 
 	pos_control.update_z_controller();

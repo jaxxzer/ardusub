@@ -36,6 +36,7 @@ void Sub::init_rangefinder(void)
 }
 
 // return rangefinder altitude in centimeters
+// Called at 20Hz
 void Sub::read_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
