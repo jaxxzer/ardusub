@@ -52,6 +52,7 @@ private:
         uint8_t compid;
         mavlink_channel_t channel;
         uint8_t mavtype;
+        uint8_t destination_mask; // mask of destination channels for routing
     } routes[MAVLINK_MAX_ROUTES];
     
     // a channel mask to block routing as required
@@ -65,4 +66,6 @@ private:
 
     // special handling for heartbeat messages
     void handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg);
+
+    void update_destinations(void);
 };
