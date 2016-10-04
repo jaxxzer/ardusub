@@ -257,6 +257,9 @@ void Sub::auto_wp_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
+    // TODO logic for terrain tracking target going below fence limit
+    // TODO implement waypoint radius individually for each waypoint based on cmd.p2
+    // TODO fix auto yaw heading to switch to something appropriate when mission complete and switches to loiter
     failsafe_terrain_set_status(wp_nav.update_wpnav());
 
     ///////////////////////

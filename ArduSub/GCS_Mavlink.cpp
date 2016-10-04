@@ -292,8 +292,7 @@ void NOINLINE Sub::send_location(mavlink_channel_t chan)
         vel.x,                          // X speed cm/s (+ve North)
         vel.y,                          // Y speed cm/s (+ve East)
         vel.z,                          // Z speed cm/s (+ve up)
-//        ahrs.yaw_sensor);               // compass heading in 1/100 degree
-        get_auto_heading());               // compass heading in 1/100 degree
+        ahrs.yaw_sensor);               // compass heading in 1/100 degree
 }
 
 void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
