@@ -108,27 +108,22 @@ void Sub::failsafe_internal_temperature_check() {
 	}
 
 	uint32_t tnow = AP_HAL::millis();
-
-	static uint32_t last_temperature_warn_ms = 0;
-	static uint32_t last_temperature_good_ms = 0;
-
-	bool internal_temp_good = barometer.get_temperature(0) < g.failsafe_temperature_max;
-
-	// failsafe.internal_temperature flag allows triggering of failsafe externally
-	// via a temperature sensor other than the onboard baro
-	if(!failsafe.internal_temperature && internal_temp_good) {
+	static uint32_t last_temperature_warn_ms;
+	static uint32_t last_temperature_good_ms;
+	if(barometer.get_temperature(0) < g.failsafe_temperature_max) {
 		last_temperature_good_ms = tnow;
 		last_temperature_warn_ms = tnow;
+		failsafe.internal_temperature = false;
 		return;
 	}
 
 	// 2 seconds with no readings below threshold triggers failsafe
-	if(tnow < last_temperature_good_ms + 2000) {
-		return;
+	if(tnow > last_temperature_good_ms + 2000) {
+		failsafe.internal_temperature = true;
 	}
 
 	// Warn every 5 seconds
-	if(tnow > last_temperature_warn_ms + 5000) {
+	if(failsafe.internal_temperature && tnow > last_temperature_warn_ms + 5000) {
 		last_temperature_warn_ms = tnow;
 		gcs_send_text(MAV_SEVERITY_WARNING, "Internal temperature critical!");
 	}
