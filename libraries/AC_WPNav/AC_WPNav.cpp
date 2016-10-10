@@ -336,6 +336,37 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
         calc_loiter_desired_velocity(dt,ekfGndSpdLimit);
         _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_LIMITED_AND_VEL_FF, ekfNavVelGainScaler, true);
     }
+
+	static uint32_t last_msg_ms = 0;
+	if(AP_HAL::millis() > last_msg_ms + 200) {
+		last_msg_ms = AP_HAL::millis();
+		mavlink_msg_command_long_send(
+				(mavlink_channel_t)0, //channel
+				0, //target system
+				0, //target component
+				47, //command
+				0, //confirmation
+				get_loiter_bearing_to_target(),//1
+				get_loiter_distance_to_target(),
+				0,
+				0,
+				0,
+				0,
+				0);
+//		mavlink_msg_command_long_send(
+//				(mavlink_channel_t)0, //channel
+//				0, //target system
+//				0, //target component
+//				48, //command
+//				0, //confirmation
+//				_origin.x,//1
+//				_origin.y,
+//				_origin.z,
+//				_pos_delta_unit.x,
+//				_pos_delta_unit.y,
+//				_pos_delta_unit.z,
+//				0);
+	}
 }
 
 /// init_brake_target - initializes stop position from current position and velocity
