@@ -119,6 +119,10 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         return true;
     }
 
+    if (msg->msgid == MAVLINK_MSG_ID_SERIAL_CONTROL || msg->msgid == MAVLINK_MSG_ID_MANUAL_CONTROL) {
+    	return true;
+    }
+
     // extract the targets for this packet
     int16_t target_system = -1;
     int16_t target_component = -1;
@@ -145,17 +149,9 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
                                  (broadcast_component || 
                                   target_component == routes[i].compid ||
                                   !match_system))) {
-            if (in_channel != routes[i].channel && !sent_to_chan[routes[i].channel]) {
+            if (in_channel != routes[i].channel && !sent_to_chan[routes[i].channel] && (routes[i].destination_mask & (1U<<(in_channel-MAVLINK_COMM_0))) ) {
                 if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) +
                     GCS_MAVLINK::packet_overhead_chan(routes[i].channel)) {
-#if ROUTING_DEBUG
-                    ::printf("fwd msg %u from chan %u on chan %u sysid=%d compid=%d\n",
-                             msg->msgid,
-                             (unsigned)in_channel,
-                             (unsigned)routes[i].channel,
-                             (int)target_system,
-                             (int)target_component);
-#endif
                     _mavlink_resend_uart(routes[i].channel, msg);
                 }
                 sent_to_chan[routes[i].channel] = true;
@@ -236,6 +232,8 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
             routes[i].channel == in_channel) {
             if (routes[i].mavtype == 0 && msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
                 routes[i].mavtype = mavlink_msg_heartbeat_get_type(msg);
+                // we can only update destinations after we find out what the mavtype on this route is
+                update_destinations();
             }
             break;
         }
@@ -249,10 +247,11 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
         }
         num_routes++;
 #if ROUTING_DEBUG
-        ::printf("learned route %u %u via %u\n",
+        ::printf("learned route %u %u via %u msgtype %u\n",
                  (unsigned)msg->sysid, 
                  (unsigned)msg->compid,
-                 (unsigned)in_channel);
+                 (unsigned)in_channel,
+				 (unsigned)msg->msgid);
 #endif
     }
 }
@@ -293,8 +292,9 @@ void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavli
             if (comm_get_txspace(channel) >= ((uint16_t)msg->len) +
                 GCS_MAVLINK::packet_overhead_chan(channel)) {
 #if ROUTING_DEBUG
-                ::printf("fwd HB from chan %u on chan %u from sysid=%u compid=%u\n",
-                         (unsigned)in_channel,
+                ::printf("mask %u fwd HB from chan %u on chan %u from sysid=%u compid=%u\n",
+                         (unsigned)mask,
+						 (unsigned)in_channel,
                          (unsigned)channel,
                          (unsigned)msg->sysid,
                          (unsigned)msg->compid);
@@ -325,3 +325,33 @@ void MAVLink_routing::get_targets(const mavlink_message_t* msg, int16_t &sysid, 
     }
 }
 
+/*
+ * Create routing for many subsystems -> many GCS and
+ * many GCS -> many subsystems.
+ * This configuration prevents routing messages originating from
+ * a subsystem to all other subsystems.
+ * This also prevents forwarding heartbeats originating from GCS
+ * to subsystems. Heartbeats originating from subsystems are
+ * forwarded to GCS only.
+ */
+void MAVLink_routing::update_destinations()
+{
+	uint8_t gcs_channels = 0; // Bitmask of channels where mavtype = GCS
+	for(int i = 0; i < num_routes; i++) {
+		if(routes[i].mavtype == MAV_TYPE_GCS) {
+			// GCS packets are forwarded on all channels to allow param fetching/setting
+			routes[i].destination_mask = 0xFF;
+			gcs_channels |= 1U<<(routes[i].channel-MAVLINK_COMM_0);
+		}
+	}
+
+	no_route_mask = 0; // Bitmask of channels that would NOT like HEARTBEATS forwarded TO them
+	for(int i = 0; i < num_routes; i++) {
+		if(routes[i].mavtype != MAV_TYPE_GCS) {
+			// Forward all packets on all GCS channels
+			routes[i].destination_mask = gcs_channels;
+			// Do not forward HEARTBEATS to this channel
+			no_route_mask |= 1U<<(routes[i].channel-MAVLINK_COMM_0);
+		}
+	}
+}
