@@ -2046,7 +2046,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     			sub.ext_failsafe.leak = false;
     		} else {
     			sub.ext_failsafe.leak = true;
-    			sub.water_detector.set_detect();
+    			sub.leak_detector.set_detect();
     		}
     	}
 
