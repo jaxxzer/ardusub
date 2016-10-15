@@ -121,11 +121,26 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held) {
 		case JSButton::button_function_t::k_mount_center:
 			cam_tilt_goal = 1500;
 			break;
-		case JSButton::button_function_t::k_mount_tilt_up:
-			cam_tilt_goal = constrain_float(cam_tilt_goal-30,800,2200);
+		case JSButton::button_function_t::k_mount_tilt_up: {
+			uint8_t i;
+			if(RC_Channel_aux::find_channel(RC_Channel_aux::k_mount_tilt, i)) {
+				RC_Channel *ch = RC_Channel::rc_channel(i);
+				uint16_t min = ch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
+				uint16_t max = ch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
+				//int16_t goal = MIN(cam_tilt_goal-30, min)
+				cam_tilt_goal = constrain_int16(cam_tilt_goal-30,min,max);
+			}
+		}
 			break;
-		case JSButton::button_function_t::k_mount_tilt_down:
-			cam_tilt_goal = constrain_float(cam_tilt_goal+30,800,2200);
+		case JSButton::button_function_t::k_mount_tilt_down: {
+			uint8_t i;
+			if(RC_Channel_aux::find_channel(RC_Channel_aux::k_mount_tilt, i)) {
+				RC_Channel *ch = RC_Channel::rc_channel(i);
+				uint16_t min = ch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MIN);
+				uint16_t max = ch->get_limit_pwm(RC_Channel::RC_CHANNEL_LIMIT_MAX);
+				cam_tilt_goal = constrain_int16(cam_tilt_goal+30,min,max);
+			}
+		}
 			break;
 		case JSButton::button_function_t::k_camera_trigger:
 			break;
