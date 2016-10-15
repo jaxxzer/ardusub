@@ -309,6 +309,13 @@ private:
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
     } failsafe;
 
+    struct {
+    	uint8_t battery					: 1;
+		uint8_t leak					: 1;
+		uint8_t internal_pressure		: 1;
+		uint8_t internal_temperature	: 1;
+    } ext_failsafe;
+
     // sensor health for logging
     struct {
         uint8_t baro        : 1;    // true if baro is healthy

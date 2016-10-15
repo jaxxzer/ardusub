@@ -82,20 +82,28 @@ void Sub::failsafe_internal_pressure_check() {
 	uint32_t tnow = AP_HAL::millis();
 	static uint32_t last_pressure_warn_ms;
 	static uint32_t last_pressure_good_ms;
-	if(barometer.get_pressure(0) < g.failsafe_pressure_max) {
+	if(barometer.get_pressure(0) < g.failsafe_pressure_max && !ext_failsafe.internal_pressure) {
 		last_pressure_good_ms = tnow;
 		last_pressure_warn_ms = tnow;
+		if(failsafe.internal_pressure) {
+			Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_PRESSURE, ERROR_CODE_FAILSAFE_RESOLVED);
+		}
 		failsafe.internal_pressure = false;
 		return;
 	}
 
 	// 2 seconds with no readings below threshold triggers failsafe
-	if(tnow > last_pressure_good_ms + 2000) {
+	if(tnow < last_pressure_good_ms + 2000) {
+		return;
+	}
+
+	if(!failsafe.internal_pressure) {
 		failsafe.internal_pressure = true;
+		Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_PRESSURE, ERROR_CODE_FAILSAFE_OCCURRED);
 	}
 
 	// Warn every 5 seconds
-	if(failsafe.internal_pressure && tnow > last_pressure_warn_ms + 5000) {
+	if(tnow > last_pressure_warn_ms + 5000) {
 		last_pressure_warn_ms = tnow;
 		gcs_send_text(MAV_SEVERITY_WARNING, "Internal pressure critical!");
 	}
@@ -108,22 +116,32 @@ void Sub::failsafe_internal_temperature_check() {
 	}
 
 	uint32_t tnow = AP_HAL::millis();
-	static uint32_t last_temperature_warn_ms;
-	static uint32_t last_temperature_good_ms;
-	if(barometer.get_temperature(0) < g.failsafe_temperature_max) {
+	static uint32_t last_temperature_warn_ms = 0;
+	static uint32_t last_temperature_good_ms = 0;
+
+	// Onboard baro, internal pressure
+	if(barometer.get_temperature(0) < g.failsafe_temperature_max && !ext_failsafe.internal_temperature) {
 		last_temperature_good_ms = tnow;
 		last_temperature_warn_ms = tnow;
+		if(failsafe.internal_temperature) {
+			Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TEMPERATURE, ERROR_CODE_FAILSAFE_RESOLVED);
+		}
 		failsafe.internal_temperature = false;
 		return;
 	}
 
 	// 2 seconds with no readings below threshold triggers failsafe
-	if(tnow > last_temperature_good_ms + 2000) {
+	if(tnow < last_temperature_good_ms + 2000) {
+		return;
+	}
+
+	if(!failsafe.internal_temperature) {
 		failsafe.internal_temperature = true;
+		Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TEMPERATURE, ERROR_CODE_FAILSAFE_OCCURRED);
 	}
 
 	// Warn every 5 seconds
-	if(failsafe.internal_temperature && tnow > last_temperature_warn_ms + 5000) {
+	if(tnow > last_temperature_warn_ms + 5000) {
 		last_temperature_warn_ms = tnow;
 		gcs_send_text(MAV_SEVERITY_WARNING, "Internal temperature critical!");
 	}
@@ -134,6 +152,9 @@ void Sub::set_leak_status(bool status) {
 
 	// Do nothing if we are dry, or if leak failsafe action is disabled
 	if(status == false || g.failsafe_leak == FS_LEAK_DISABLED) {
+		if(failsafe.leak) {
+			Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_RESOLVED);
+		}
 		failsafe.leak = false;
 		return;
 	}
@@ -147,16 +168,15 @@ void Sub::set_leak_status(bool status) {
 		gcs_send_text(MAV_SEVERITY_WARNING, "Leak Detected");
 	}
 
-	// Do nothing if we have already triggered the failsafe action, or if the motors are disarmed
-	if(failsafe.leak || !motors.armed()) {
-		return;
-	}
+	// Do nothing if we have already triggered the failsafe action
+	if(!failsafe.leak) {
+		failsafe.leak = true;
+		Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_OCCURRED);
 
-	failsafe.leak = true;
-
-	// Handle failsafe action
-	if(g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
-		set_mode(SURFACE, MODE_REASON_LEAK_FAILSAFE);
+		// Handle failsafe action
+		if(g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
+			set_mode(SURFACE, MODE_REASON_LEAK_FAILSAFE);
+		}
 	}
 }
 
@@ -165,7 +185,7 @@ void Sub::failsafe_gcs_check()
 {
     // return immediately if gcs failsafe action is disabled
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if (!g.failsafe_gcs && g.failsafe_gcs == FS_GCS_DISABLED) {
+    if ((!g.failsafe_gcs && g.failsafe_gcs == FS_GCS_DISABLED) || failsafe.last_heartbeat_ms == 0) {
     	return;
     }
 
@@ -191,22 +211,20 @@ void Sub::failsafe_gcs_check()
 		gcs_send_text_fmt(MAV_SEVERITY_WARNING, "MYGCS: %d, heartbeat lost", g.sysid_my_gcs);
 	}
 
-    // do nothing if we have already triggered the failsafe action, or if the motors are disarmed
-    if (failsafe.gcs || !motors.armed()) {
-        return;
-    }
+    // do nothing if we have already triggered the failsafe action
+    if(!failsafe.gcs) {
+        // update state, log to dataflash
+        failsafe.gcs = true;
+        Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    // update state, log to dataflash
-    failsafe.gcs = true;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
-
-    // handle failsafe action
-    if(g.failsafe_gcs == FS_GCS_DISARM) {
-    	init_disarm_motors();
-    } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
-    	set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE);
-    } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
-    	set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE);
+        // handle failsafe action
+        if(g.failsafe_gcs == FS_GCS_DISARM) {
+        	init_disarm_motors();
+        } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
+        	set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE);
+        } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
+        	set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE);
+        }
     }
 }
 
