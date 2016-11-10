@@ -41,6 +41,20 @@ void Sub::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Sub::userhook_SuperSlowLoop()
 {
-    // put your 1Hz code here
+//			mavlink_msg_command_long_send(
+//					(mavlink_channel_t)0, //channel
+//					0, //target system
+//					0, //target component
+//					51, //command
+//					0, //confirmation
+//					channel_throttle->get_radio_in(),
+//					channel_throttle->get_control_in(),
+//					channel_throttle->pwm_to_angle(),
+//					channel_throttle->norm_input(),//1
+//					channel_throttle->norm_input_dz(),
+//					get_throttle_control_dz(),
+//					get_pilot_desired_throttle(channel_throttle->get_control_in()));
+//
+
 }
 #endif

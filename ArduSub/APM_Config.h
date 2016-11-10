@@ -16,7 +16,7 @@
 
 // uncomment the lines below to disable features (flash sizes listed are for APM2 boards and will underestimate savings on Pixhawk and other boards)
 //#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
-//#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
+#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
 #define AUTOTUNE_ENABLED      DISABLED            // disable the auto tune functionality to save 7k of flash
 //#define AC_FENCE              DISABLED            // disable fence to save 2k of flash
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
@@ -25,11 +25,11 @@
 #define AC_RALLY              DISABLED            // disable rally points library (must also disable terrain which relies on rally)
 #define AC_TERRAIN            DISABLED            // disable terrain library
 #define PARACHUTE             DISABLED            // disable parachute release to save 1k of flash
-//#define EPM_ENABLED           DISABLED            // disable epm cargo gripper to save 500bytes of flash
-//#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
+#define EPM_ENABLED           DISABLED            // disable epm cargo gripper to save 500bytes of flash
+#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
-//#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
-//#define FRSKY_TELEM_ENABLED   DISABLED            // disable FRSky telemetry
+#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
+#define FRSKY_TELEM_ENABLED   DISABLED            // disable FRSky telemetry
 #define PRECISION_LANDING     DISABLED             // enable precision landing using companion computer or IRLock sensor
 #define TRANSECT_ENABLED      DISABLED
 
