@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -6,8 +5,12 @@
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
 #include <AP_IRLock/AP_IRLock.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_IRLock/AP_IRLock_SITL.h>
+#endif
+
 // this only builds for PX4 so far
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 /*
  * AC_PrecLand_IRLock - implements precision landing using target vectors provided
@@ -41,8 +44,12 @@ public:
     void handle_msg(mavlink_message_t* msg) {};
 
 private:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    AP_IRLock_SITL irlock;
+#else
     AP_IRLock_PX4 irlock;
-    
+#endif
+
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured

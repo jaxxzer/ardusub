@@ -3,6 +3,8 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||        \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 ||   \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH ||           \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK ||         \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_URUS ||         \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #include <assert.h>
 #include <errno.h>
@@ -107,12 +109,12 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     _phys_pages = (void**)malloc(page_count * sizeof(void*));
     _page_count = page_count;
  
-    if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
+    if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {
         fprintf(stderr,"Failed to open /dev/mem\n");
         exit(-1);
     }
 
-    if ((file = open("/proc/self/pagemap", O_RDWR | O_SYNC)) < 0) {
+    if ((file = open("/proc/self/pagemap", O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {
         fprintf(stderr,"Failed to open /proc/self/pagemap\n");
         exit(-1);
     }
@@ -148,7 +150,7 @@ Memory_table::~Memory_table()
 void* Memory_table::get_page(void** const pages, uint32_t addr) const
 {
     if (addr >= PAGE_SIZE * _page_count) {
-        return NULL;   
+        return nullptr;
     }
     return (uint8_t*)pages[(uint32_t) addr / 4096] + addr % 4096;
 }
@@ -164,7 +166,7 @@ void* Memory_table::get_virt_addr(const uint32_t phys_addr) const
             return (void*) ((uintptr_t) _virt_pages[i] + (phys_addr & 0xFFF));
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 // FIXME: in-congruent function style see above
@@ -214,14 +216,14 @@ void RCInput_RPI::set_physical_addresses(int version)
 //Map peripheral to virtual memory
 void* RCInput_RPI::map_peripheral(uint32_t base, uint32_t len)
 {
-    int fd = open("/dev/mem", O_RDWR);
+    int fd = open("/dev/mem", O_RDWR | O_CLOEXEC);
     void * vaddr;
 
     if (fd < 0) {
         printf("Failed to open /dev/mem: %m\n");
-        return NULL;
+        return nullptr;
     }
-    vaddr = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, base);
+    vaddr = mmap(nullptr, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, base);
     if (vaddr == MAP_FAILED) {
         printf("rpio-pwm: Failed to map peripheral at 0x%08x: %m\n", base);
     }
@@ -376,12 +378,18 @@ void RCInput_RPI::init_DMA()
 //We must stop DMA when the process is killed
 void RCInput_RPI::set_sigaction()
 {
-    for (int i = 0; i < 64; i++) { 
-        //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
-        struct sigaction sa;
+    for (int i = 0; i < NSIG; i++) {
+        // catch all signals to ensure DMA is disabled - some of them may
+        // already be handled elsewhere in cases we consider normal
+        // termination. In those cases the teardown() method must be called.
+        struct sigaction sa, sa_old;
         memset(&sa, 0, sizeof(sa));
-        sa.sa_handler = RCInput_RPI::termination_handler;
-        sigaction(i, &sa, NULL);
+        sigaction(i, nullptr, &sa_old);
+
+        if (sa_old.sa_handler == nullptr) {
+            sa.sa_handler = RCInput_RPI::termination_handler;
+            sigaction(i, &sa, nullptr);
+        }
     }
 }
 
@@ -415,7 +423,7 @@ RCInput_RPI::~RCInput_RPI()
     delete con_blocks;
 }
 
-void RCInput_RPI::deinit()
+void RCInput_RPI::teardown()
 {
     stop_dma();
 }
@@ -466,7 +474,7 @@ void RCInput_RPI::_timer_tick()
     dma_cb_t* ad = (dma_cb_t*) con_blocks->get_virt_addr(dma_reg[RCIN_RPI_DMA_CONBLK_AD | RCIN_RPI_DMA_CHANNEL << 8]);
     for(j = 1; j >= -1; j--){
     x = circle_buffer->get_virt_addr((ad + j)->dst);
-    if(x != NULL) {
+    if(x != nullptr) {
         break;}
     }
     
