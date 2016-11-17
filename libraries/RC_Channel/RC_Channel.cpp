@@ -609,12 +609,3 @@ float RC_Channel::get_radio_out_normalised(uint16_t pwm) const
     }
     return ret;
 }
-
-void RC_Channel::scale_dead_zones(float scalar) {
-    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (_rc_ch[i] != NULL) {
-            _rc_ch[i]->_dead_zone.load();
-            _rc_ch[i]->_dead_zone = _rc_ch[i]->_dead_zone * scalar;
-        }
-    }
-}
