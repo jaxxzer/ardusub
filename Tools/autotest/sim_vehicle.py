@@ -711,7 +711,7 @@ parser = CompatOptionParser("sim_vehicle.py",
                "you are simulating, for example, start in the ArduPlane directory to " \
                "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter or APMrover2)")
+parser.add_option("-v", "--vehicle", type='string', default=None, help="vehicle type (ArduPlane, ArduCopter, APMrover2, or ArduSub)")
 parser.add_option("-f", "--frame", type='string', default=None, help="""set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail""")
@@ -804,6 +804,7 @@ default_frame_for_vehicle = {
     "APMrover2": "rover",
     "ArduPlane": "jsbsim",
     "ArduCopter": "quad",
+    "ArduSub": "vectored",
     "AntennaTracker": "tracker",
 }
 
