@@ -622,6 +622,44 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_14,                   "RC14_", RC_Channel_aux),
 
+	// @Param: JS_GAIN_CURRENT
+	// @DisplayName: Current joystick gain
+	// @Description: The joystick input is multiplied by this scalar
+	// @User: Standard
+	GSCALAR(gain, "JS_GAIN_CURRENT", 0.5),
+
+	// @Param: JS_GAIN_MAX
+	// @DisplayName: Maximum joystick gain
+	// @Description: Maximum joystick gain
+	// @User: Standard
+	// @Range: 0.2 1.0
+	// @Default: 1.0
+	GSCALAR(maxGain, "JS_GAIN_MAX", 1.0),
+
+	// @Param: JS_GAIN_MIN
+	// @DisplayName: Minimum joystick gain
+	// @Description: Minimum joystick gain
+	// @User: Standard
+	// @Range: 0.1 0.8
+	// @Default: 0.25
+	GSCALAR(minGain, "JS_GAIN_MIN", 0.25),
+
+	// @Param: JS_GAIN_STEPS
+	// @DisplayName: Gain steps
+	// @Discription: Controls the number of steps between minimum and maximum joystick gain when the gain is adjusted using buttons
+	// @User: Standard
+	// @Range: 2 10
+	// @Default: 4
+	GSCALAR(numGainSettings, "JS_GAIN_STEPS", 4),
+
+	// @Param: JS_GAIN_DEFAULT
+	// @DisplayName: Default gain at boot
+	// @Discription: Default gain at boot, must be in range [GAIN_MIN,GAIN_MAX]
+	// @User: Standard
+	// @Range: 0.1 1.0
+	// @Default: 0.5
+	GSCALAR(gain_default, "JS_GAIN_DEFAULT", 0.5),
+
 	// @Group: BTN0_
 	// @Path: ../libraries/AP_JSButton/AP_JSButton.cpp
 	GGROUP(jbtn_0,                   "BTN0_", JSButton),

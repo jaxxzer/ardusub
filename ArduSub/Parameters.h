@@ -16,7 +16,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t        k_format_version = 120;
+    static const uint16_t        k_format_version = 66;
 
     // The parameter software_type is set up solely for ground station use
     // and identifies the software type (eg ArduPilotMega versus
@@ -369,6 +369,12 @@ public:
 		//Sub-specific parameters
 		k_param_surface_depth = 256,
 
+		// Joystic gain parameters
+		k_param_gain,
+		k_param_maxGain,
+		k_param_minGain,
+		k_param_numGainSettings,
+		
 		// Joystick button mapping parameters
 		k_param_jbtn_0 = 261,
 		k_param_jbtn_1,
@@ -399,7 +405,9 @@ public:
 
 		k_param_failsafe_terrain, // terrain failsafe behavior
 
-		k_param_xtrack_angle_limit // angle limit for xtrack correction in degrees
+		k_param_xtrack_angle_limit, // angle limit for xtrack correction in degrees
+
+		k_param_gain_default
     };
 
     AP_Int16        format_version;
@@ -518,6 +526,12 @@ public:
     RC_Channel_aux          rc_14;
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
+
+	AP_Float gain;
+	AP_Float maxGain;
+	AP_Float minGain;
+	AP_Int8 numGainSettings;
+	AP_Float gain_default;
 
     // Joystick button parameters
     JSButton 				jbtn_0;

@@ -43,6 +43,14 @@ void Sub::init_rc_in()
     channel_throttle->set_radio_trim(1100);
     channel_throttle->save_eeprom();
 
+    if(g.numGainSettings < 2) g.numGainSettings.set_and_save(2);
+
+    if(g.gain_default < g.maxGain + 0.01 && g.gain_default > g.minGain - 0.01) {
+    	g.gain.set_and_save(g.gain_default);
+    } else {
+        g.gain.set_and_save(g.minGain + (g.numGainSettings/2 - 1) * (g.maxGain - g.minGain) / (g.numGainSettings - 1));
+    }
+
     //set auxiliary servo ranges
 //    g.rc_5.set_range(0,1000);
 //    g.rc_6.set_range(0,1000);
