@@ -241,6 +241,8 @@ void Plane::init_ardupilot()
 
     quadplane.setup();
 
+    AP_Param::reload_defaults_file();
+    
     startup_ground();
 
     // don't initialise aux rc output until after quadplane is setup as
@@ -337,11 +339,8 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     // reset landing check
     auto_state.checked_for_autoland = false;
 
-    // reset go around command
-    landing.commanded_go_around = false;
-
-    // not in pre-flare
-    landing.pre_flare = false;
+    // reset landing
+    landing.reset();
     
     // zero locked course
     steer_state.locked_course_err = 0;
@@ -497,10 +496,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     if (should_log(MASK_LOG_MODE))
         DataFlash.Log_Write_Mode(control_mode);
 
-    // reset attitude integrators on mode change
-    rollController.reset_I();
-    pitchController.reset_I();
-    yawController.reset_I();    
+    // reset steering integrator on mode change
     steerController.reset_I();    
 }
 
@@ -557,10 +553,7 @@ void Plane::check_long_failsafe()
     uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+    if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && !landing.in_progress) {
         if (failsafe.state == FAILSAFE_SHORT &&
                    (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, MODE_REASON_RADIO_FAILSAFE);
@@ -593,10 +586,7 @@ void Plane::check_short_failsafe()
 {
     // only act on changes
     // -------------------
-    if(failsafe.state == FAILSAFE_NONE &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_PREFLARE &&
-            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+    if(failsafe.state == FAILSAFE_NONE && !landing.in_progress) {
         // The condition is checked and the flag ch3_failsafe is set in radio.cpp
         if(failsafe.ch3_failsafe) {
             failsafe_short_on_event(FAILSAFE_SHORT, MODE_REASON_RADIO_FAILSAFE);
@@ -754,23 +744,6 @@ void Plane::print_comma(void)
 #endif
 
 /*
-  write to a servo
- */
-void Plane::servo_write(uint8_t ch, uint16_t pwm)
-{
-#if HIL_SUPPORT
-    if (g.hil_mode==1 && !g.hil_servos) {
-        if (ch < 8) {
-            RC_Channel::rc_channel(ch)->set_radio_out(pwm);
-        }
-        return;
-    }
-#endif
-    hal.rcout->enable_ch(ch);
-    hal.rcout->write(ch, pwm);
-}
-
-/*
   should we log a message type now?
  */
 bool Plane::should_log(uint32_t mask)
@@ -799,11 +772,12 @@ int8_t Plane::throttle_percentage(void)
     }
     // to get the real throttle we need to use norm_output() which
     // returns a number from -1 to 1.
+    float throttle = SRV_Channels::get_output_norm(SRV_Channel::k_throttle);
     if (aparm.throttle_min >= 0) {
-        return constrain_int16(50*(channel_throttle->norm_output()+1), 0, 100);
+        return constrain_int16(50*(throttle+1), 0, 100);
     } else {
         // reverse thrust
-        return constrain_int16(100*channel_throttle->norm_output(), -100, 100);
+        return constrain_int16(100*throttle, -100, 100);
     }
 }
 
@@ -826,9 +800,6 @@ bool Plane::arm_motors(AP_Arming::ArmingMethod method)
         return false;
     }
 
-    // only log if arming was successful
-    channel_throttle->enable_out();
-
     change_arm_state();
     return true;
 }
@@ -840,9 +811,6 @@ bool Plane::disarm_motors(void)
 {
     if (!arming.disarm()) {
         return false;
-    }
-    if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
-        channel_throttle->disable_out();  
     }
     if (control_mode != AUTO) {
         // reset the mission on disarm if we are not in auto

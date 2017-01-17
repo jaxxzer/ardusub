@@ -61,29 +61,7 @@
 // FRAME_CONFIG
 //
 #ifndef FRAME_CONFIG
- # define FRAME_CONFIG   QUAD_FRAME
-#endif
-
-#if FRAME_CONFIG == QUAD_FRAME
- # define FRAME_CONFIG_STRING "QUAD"
-#elif FRAME_CONFIG == TRI_FRAME
- # define FRAME_CONFIG_STRING "TRI"
-#elif FRAME_CONFIG == HEXA_FRAME
- # define FRAME_CONFIG_STRING "HEXA"
-#elif FRAME_CONFIG == Y6_FRAME
- # define FRAME_CONFIG_STRING "Y6"
-#elif FRAME_CONFIG == OCTA_FRAME
- # define FRAME_CONFIG_STRING "OCTA"
-#elif FRAME_CONFIG == OCTA_QUAD_FRAME
- # define FRAME_CONFIG_STRING "OCTA_QUAD"
-#elif FRAME_CONFIG == HELI_FRAME
- # define FRAME_CONFIG_STRING "HELI"
-#elif FRAME_CONFIG == SINGLE_FRAME
- # define FRAME_CONFIG_STRING "SINGLE"
-#elif FRAME_CONFIG == COAX_FRAME
- # define FRAME_CONFIG_STRING "COAX"
-#else
- # define FRAME_CONFIG_STRING "UNKNOWN"
+ # define FRAME_CONFIG   MULTICOPTER_FRAME
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -93,23 +71,6 @@
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////
-// Y6 defaults
-#if FRAME_CONFIG == Y6_FRAME
-  # define RATE_ROLL_P                  0.1f
-  # define RATE_ROLL_D                  0.006f
-  # define RATE_PITCH_P                 0.1f
-  # define RATE_PITCH_D                 0.006f
-  # define RATE_YAW_P                   0.150f
-  # define RATE_YAW_I                   0.015f
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////
-// Tri defaults
-#if FRAME_CONFIG == TRI_FRAME
-  # define RATE_YAW_FILT_HZ             100.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -664,7 +625,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Fence, Rally and Terrain defaults
+// Fence, Rally and Terrain and AC_Avoidance defaults
 //
 
 // Enable/disable Fence
@@ -678,9 +639,21 @@
 
 #ifndef AC_TERRAIN
  #define AC_TERRAIN ENABLED
- #if !AC_RALLY
-  #error Terrain relies on Rally which is disabled
- #endif
+#endif
+
+#if AC_TERRAIN && !AC_RALLY
+ #error Terrain relies on Rally which is disabled
+#endif
+
+#ifndef AC_AVOID_ENABLED
+ #define AC_AVOID_ENABLED   ENABLED
+#endif
+
+#if AC_AVOID_ENABLED && !PROXIMITY_ENABLED
+  #error AC_Avoidance relies on PROXIMITY_ENABLED which is disabled
+#endif
+#if AC_AVOID_ENABLED && !AC_FENCE
+  #error AC_Avoidance relies on AC_FENCE which is disabled
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

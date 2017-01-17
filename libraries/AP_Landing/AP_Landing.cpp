@@ -146,7 +146,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+bool AP_Landing::verify_land(const AP_Vehicle::FixedWing::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
         const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed)
 {
     switch (type) {
@@ -189,14 +189,16 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
 /*
  * initialize state for new nav command
  */
-void AP_Landing::init_start_nav_cmd(void)
+void AP_Landing::reset(void)
 {
-    switch (type) {
-    default:
-    case TYPE_STANDARD_GLIDE_SLOPE:
-        type_slope_init_start_nav_cmd();
-        break;
-    }
+    complete = false;
+    pre_flare = false;
+    commanded_go_around = false;
+    initial_slope = 0;
+    slope = 0;
+
+    // once landed, post some landing statistics to the GCS
+    post_stats = false;
 }
 
 /*
@@ -281,7 +283,7 @@ float AP_Landing::head_wind(void)
 /*
  * returns target airspeed in cm/s depending on flight stage
  */
-int32_t AP_Landing::get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage flight_stage)
+int32_t AP_Landing::get_target_airspeed_cm(const AP_Vehicle::FixedWing::FlightStage flight_stage)
 {
     int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
 
@@ -296,14 +298,14 @@ int32_t AP_Landing::get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage f
     const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
 
     switch (flight_stage) {
-    case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+    case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
         if (land_airspeed >= 0) {
             target_airspeed_cm = land_airspeed * 100;
         }
         break;
 
-    case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-    case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+    case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
+    case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
         if (pre_flare && get_pre_flare_airspeed() > 0) {
             // if we just preflared then continue using the pre-flare airspeed during final flare
             target_airspeed_cm = get_pre_flare_airspeed() * 100;
@@ -322,3 +324,18 @@ int32_t AP_Landing::get_target_airspeed_cm(const AP_SpdHgtControl::FlightStage f
     // Do not lower it or exceed cruise speed
     return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
 }
+
+/*
+ * request a landing abort given the landing type
+ * return true on success
+ */
+bool AP_Landing::request_go_around(void)
+{
+    switch (type) {
+    default:
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_request_go_around();
+    }
+}
+
+
