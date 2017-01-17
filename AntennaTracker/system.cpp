@@ -162,15 +162,13 @@ void Tracker::set_home(struct Location temp)
 }
 
 void Tracker::arm_servos()
-{    
-    channel_yaw.enable_out();
-    channel_pitch.enable_out();
+{
+    hal.util->set_soft_armed(true);
 }
 
 void Tracker::disarm_servos()
 {
-    channel_yaw.disable_out();
-    channel_pitch.disable_out();
+    hal.util->set_soft_armed(false);
 }
 
 /*
@@ -179,15 +177,15 @@ void Tracker::disarm_servos()
 void Tracker::prepare_servos()
 {
     start_time_ms = AP_HAL::millis();
-    channel_yaw.set_radio_out(channel_yaw.get_radio_trim());
-    channel_pitch.set_radio_out(channel_pitch.get_radio_trim());
-    channel_yaw.output();
-    channel_pitch.output();
+    SRV_Channels::set_output_limit(SRV_Channel::k_tracker_yaw, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    SRV_Channels::set_output_limit(SRV_Channel::k_tracker_pitch, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    SRV_Channels::calc_pwm();
+    SRV_Channels::output_ch_all();
 }
 
 void Tracker::set_mode(enum ControlMode mode)
 {
-    if(control_mode == mode) {
+    if (control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
         return;
     }

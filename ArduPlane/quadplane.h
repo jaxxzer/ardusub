@@ -9,24 +9,6 @@
 #include <AP_Proximity/AP_Proximity.h>
 
 /*
-  frame types for quadplane build. Most case be set with
-  parameters. Those that can't are listed here and chosen with a build
-  time FRAME_CONFIG parameter
- */
-#define MULTICOPTER_FRAME 1
-#define TRI_FRAME 2
-
-#ifndef FRAME_CONFIG
-# define FRAME_CONFIG MULTICOPTER_FRAME
-#endif
-
-#if FRAME_CONFIG == TRI_FRAME
-#define AP_MOTORS_CLASS AP_MotorsTri
-#else
-#define AP_MOTORS_CLASS AP_MotorsMulticopter
-#endif
-
-/*
   QuadPlane specific functionality
  */
 class QuadPlane
@@ -121,12 +103,10 @@ private:
     AC_PID                  pid_accel_z{0.3, 1, 0, 800, 10, 0.02};
     AC_PI_2D                pi_vel_xy{0.7, 0.35, 1000, 5, 0.02};
 
-#if FRAME_CONFIG == MULTICOPTER_FRAME
     AP_Int8 frame_class;
-#endif
     AP_Int8 frame_type;
     
-    AP_MOTORS_CLASS *motors;
+    AP_MotorsMulticopter *motors;
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
@@ -306,14 +286,6 @@ private:
         Vector3f target;
         bool slow_descent:1;
     } poscontrol;
-
-    enum frame_class {
-        FRAME_CLASS_QUAD=0,
-        FRAME_CLASS_HEXA=1,
-        FRAME_CLASS_OCTA=2,
-        FRAME_CLASS_OCTAQUAD=3,
-        FRAME_CLASS_Y6=4,
-    };
 
     struct {
         bool running;

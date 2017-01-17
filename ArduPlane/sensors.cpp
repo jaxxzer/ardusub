@@ -33,9 +33,7 @@ void Plane::read_rangefinder(void)
 #endif
     {
         // use the best available alt estimate via baro above home
-        if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        if (landing.in_progress) {
             // ensure the rangefinder is powered-on when land alt is higher than home altitude.
             // This is done using the target alt which we know is below us and we are sinking to it
             height = height_above_target();
@@ -353,7 +351,7 @@ void Plane::update_sensor_status_flags(void)
         }
     }
 
-    if (aparm.throttle_min < 0 && channel_throttle->get_servo_out() < 0) {
+    if (aparm.throttle_min < 0 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;
         control_sensors_health |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }

@@ -26,7 +26,7 @@
   update navigation for landing. Called when on landing approach or
   final flare
  */
-bool AP_Landing::type_slope_verify_land(const AP_SpdHgtControl::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
+bool AP_Landing::type_slope_verify_land(const AP_Vehicle::FixedWing::FlightStage flight_stage, const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
         const int32_t auto_state_takeoff_altitude_rel_cm, const float height, const float sink_rate, const float wp_proportion, const uint32_t last_flying_ms, const bool is_armed, const bool is_flying, const bool rangefinder_state_in_range, bool &throttle_suppressed)
 {
     // we don't 'verify' landing in the sense that it never completes,
@@ -35,11 +35,9 @@ bool AP_Landing::type_slope_verify_land(const AP_SpdHgtControl::FlightStage flig
 
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
 
         throttle_suppressed = false;
-
-
         complete = false;
         pre_flare = false;
         nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
@@ -74,8 +72,8 @@ bool AP_Landing::type_slope_verify_land(const AP_SpdHgtControl::FlightStage flig
     // 2) passed land point and don't have an accurate AGL
     // 3) probably crashed (ensures motor gets turned off)
 
-    bool on_approach_stage = (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-                              flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
+    bool on_approach_stage = (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH ||
+                              flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE);
     bool below_flare_alt = (height <= flare_alt);
     bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
     bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
@@ -197,6 +195,13 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
     }
 }
 
+
+bool AP_Landing::type_slope_request_go_around(void)
+{
+    commanded_go_around = true;
+    return true;
+}
+
 /*
   a special glide slope calculation for the landing approach
 
@@ -293,14 +298,4 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     constrain_target_altitude_location_fn(loc, prev_WP_loc);
 }
 
-void AP_Landing::type_slope_init_start_nav_cmd(void)
-{
-    complete = false;
-    pre_flare = false;
 
-    // if a go around had been commanded, clear it now.
-    commanded_go_around = false;
-
-    // once landed, post some landing statistics to the GCS
-    post_stats = false;
-}

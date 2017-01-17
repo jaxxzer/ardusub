@@ -311,7 +311,7 @@ void Plane::afs_fs_check(void)
  */
 void Plane::update_aux(void)
 {
-    RC_Channel_aux::enable_aux_servos();
+    SRV_Channels::enable_aux_servos();
 }
 
 void Plane::one_second_loop()
@@ -543,7 +543,7 @@ void Plane::handle_auto_mode(void)
     if (quadplane.in_vtol_auto()) {
         quadplane.control_auto(next_WP_loc);
     } else if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
-        (nav_cmd_id == MAV_CMD_NAV_LAND && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT)) {
+        (nav_cmd_id == MAV_CMD_NAV_LAND && flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)) {
         takeoff_calc_roll();
         takeoff_calc_pitch();
         calc_throttle();
@@ -551,17 +551,16 @@ void Plane::handle_auto_mode(void)
         calc_nav_roll();
         calc_nav_pitch();
         
-        if (landing.complete) {
+        if (landing.is_complete()) {
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
-        }
-        calc_throttle();
-        
-        if (landing.complete) {
+
             // we are in the final stage of a landing - force
             // zero throttle
-            channel_throttle->set_servo_out(0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        } else {
+            calc_throttle();
         }
     } else {
         // we are doing normal AUTO flight, the special cases
@@ -569,8 +568,6 @@ void Plane::handle_auto_mode(void)
         if (nav_cmd_id != MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT) {
             steer_state.hold_course_cd = -1;
         }
-        landing.complete = false;
-        landing.pre_flare = false;
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();
@@ -611,7 +608,7 @@ void Plane::update_flight_mode(void)
             quadplane.guided_update();
             break;
         }
-        // fall through
+        // no break
 
     case RTL:
     case LOITER:
@@ -688,7 +685,7 @@ void Plane::update_flight_mode(void)
             // FBWA failsafe glide
             nav_roll_cd = 0;
             nav_pitch_cd = 0;
-            channel_throttle->set_servo_out(0);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
         }
         if (g.fbwa_tdrag_chan > 0) {
             // check for the user enabling FBWA taildrag takeoff mode
@@ -751,14 +748,10 @@ void Plane::update_flight_mode(void)
         break;
 
     case MANUAL:
-        // servo_out is for Sim control only
-        // ---------------------------------
-        channel_roll->set_servo_out(channel_roll->pwm_to_angle());
-        channel_pitch->set_servo_out(channel_pitch->pwm_to_angle());
-        steering_control.steering = steering_control.rudder = channel_rudder->pwm_to_angle();
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in_zero_dz());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in_zero_dz());
+        steering_control.steering = steering_control.rudder = channel_rudder->get_control_in_zero_dz();
         break;
-        //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
-
 
     case QSTABILIZE:
     case QHOVER:
@@ -834,7 +827,7 @@ void Plane::update_navigation()
         if (radius > 0) {
             loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         }
-        // fall through to LOITER
+        // no break, fall through to LOITER
 
     case LOITER:
     case AVOID_ADSB:
@@ -868,14 +861,14 @@ void Plane::update_navigation()
 /*
   set the flight stage
  */
-void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs) 
+void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
 {
     if (fs == flight_stage) {
         return;
     }
 
     switch (fs) {
-    case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+    case AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH:
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
         landing.in_progress = true;
 #if GEOFENCE_ENABLED == ENABLED 
@@ -895,19 +888,19 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 #endif
         break;
 
-    case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
+    case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
         landing.in_progress = false;
         break;
 
-    case AP_SpdHgtControl::FLIGHT_LAND_PREFLARE:
-    case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+    case AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE:
+    case AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL:
         landing.in_progress = true;
         break;
 
-    case AP_SpdHgtControl::FLIGHT_NORMAL:
-    case AP_SpdHgtControl::FLIGHT_VTOL:
-    case AP_SpdHgtControl::FLIGHT_TAKEOFF:
+    case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
+    case AP_Vehicle::FixedWing::FLIGHT_VTOL:
+    case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
         landing.in_progress = false;
         break;
     }
@@ -955,7 +948,6 @@ void Plane::update_alt()
         SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
                                                  target_airspeed_cm,
                                                  flight_stage,
-                                                 landing.in_progress,
                                                  distance_beyond_land_wp,
                                                  get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
@@ -973,22 +965,22 @@ void Plane::update_flight_stage(void)
     if (auto_throttle_mode && !throttle_suppressed) {        
         if (control_mode==AUTO) {
             if (quadplane.in_vtol_auto()) {
-                set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
+                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
             } else if (auto_state.takeoff_complete == false) {
-                set_flight_stage(AP_SpdHgtControl::FLIGHT_TAKEOFF);
+                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
 
-                if (landing.commanded_go_around || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+                if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
-                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
+                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
                 } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
                     plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
-                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
-                } else if (landing.complete == true) {
-                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
+                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
+                } else if (landing.is_complete()) {
+                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND_FINAL);
                 } else if (landing.pre_flare == true) {
-                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_PREFLARE);
-                } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND_PREFLARE);
+                } else if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH) {
                     bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
                     const bool on_flight_line = fabsf(nav_controller->crosstrack_error()) < 5.0f && !nav_controller->data_is_stale();
                     bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
@@ -996,27 +988,27 @@ void Plane::update_flight_stage(void)
                         (auto_state.wp_proportion >= 0 && heading_lined_up && on_flight_line) ||
                         (auto_state.wp_proportion > 0.15f && heading_lined_up && below_prev_WP) ||
                         (auto_state.wp_proportion > 0.5f)) {
-                        set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
+                        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND_APPROACH);
                     } else {
-                        set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);                        
+                        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
                     }
                 }
             } else if (quadplane.in_assisted_flight()) {
-                set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
+                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
             } else {
-                set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
+                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
             }
         } else {
             // If not in AUTO then assume normal operation for normal TECS operation.
             // This prevents TECS from being stuck in the wrong stage if you switch from
             // AUTO to, say, FBWB during a landing, an aborted landing or takeoff.
-            set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
+            set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
         }
     } else if (quadplane.in_vtol_mode() ||
                quadplane.in_assisted_flight()) {
-        set_flight_stage(AP_SpdHgtControl::FLIGHT_VTOL);
+        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
     } else {
-        set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);
+        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
     }
 
     // tell AHRS the airspeed to true airspeed ratio
@@ -1060,7 +1052,7 @@ void Plane::update_optical_flow(void)
 void Plane::disarm_if_autoland_complete()
 {
     if (landing.get_disarm_delay() > 0 &&
-        landing.complete &&
+        landing.is_complete() &&
         !is_flying() &&
         arming.arming_required() != AP_Arming::NO &&
         arming.is_armed()) {
@@ -1087,9 +1079,7 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+    if (landing.in_progress) {
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();
     } else {

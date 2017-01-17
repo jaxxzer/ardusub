@@ -38,7 +38,7 @@ extern const AP_HAL::HAL &hal;
 #define ENABLE_DEBUG 1
 
 #if ENABLE_DEBUG
- # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+ # define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
  # define Debug(fmt, args ...)
 #endif
@@ -1209,25 +1209,12 @@ void AP_Param::setup_sketch_defaults(void)
 
 // Load all variables from EEPROM
 //
-bool AP_Param::load_all(void)
+bool AP_Param::load_all(bool check_defaults_file)
 {
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
 
-#if HAL_OS_POSIX_IO == 1
-    /*
-      if the HAL specifies a defaults parameter file then override
-      defaults using that file
-     */
-    const char *default_file = hal.util->get_custom_defaults_file();
-    if (default_file) {
-        if (load_defaults_file(default_file)) {
-            printf("Loaded defaults from %s\n", default_file);
-        } else {
-            printf("Failed to load defaults from %s\n", default_file);
-        }
-    }
-#endif
+    reload_defaults_file(check_defaults_file);
 
     while (ofs < _storage.size()) {
         _storage.read_block(&phdr, ofs, sizeof(phdr));
@@ -1254,6 +1241,26 @@ bool AP_Param::load_all(void)
     return false;
 }
 
+/*
+  reload from hal.util defaults file
+ */
+void AP_Param::reload_defaults_file(bool panic_on_error)
+{
+#if HAL_OS_POSIX_IO == 1
+    /*
+      if the HAL specifies a defaults parameter file then override
+      defaults using that file
+     */
+    const char *default_file = hal.util->get_custom_defaults_file();
+    if (default_file) {
+        if (load_defaults_file(default_file, panic_on_error)) {
+            printf("Loaded defaults from %s\n", default_file);
+        } else {
+            printf("Failed to load defaults from %s\n", default_file);
+        }
+    }
+#endif
+}
 
 
 /* 
@@ -1560,10 +1567,10 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
     }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat"
-// convert one old vehicle parameter to new object parameter
-void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float scaler)
+/*
+  find an old parameter and return it.
+ */
+bool AP_Param::find_old_parameter(const struct ConversionInfo *info, AP_Param *value)
 {
     // find the old value in EEPROM.
     uint16_t pofs;
@@ -1572,16 +1579,30 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
     set_key(header, info->old_key);
     header.group_element = info->old_group_element;
     if (!scan(&header, &pofs)) {
+        // the old parameter isn't saved in the EEPROM.
+        return false;
+    }
+
+    // load the old value from EEPROM
+    _storage.read_block(value, pofs+sizeof(header), type_size((enum ap_var_type)header.type));
+    return true;
+}
+
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+// convert one old vehicle parameter to new object parameter
+void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float scaler, uint8_t flags)
+{
+    uint8_t old_value[type_size(info->type)];
+    AP_Param *ap = (AP_Param *)&old_value[0];
+
+    if (!find_old_parameter(info, ap)) {
         // the old parameter isn't saved in the EEPROM. It was
         // probably still set to the default value, which isn't stored
         // no need to convert
         return;
     }
-
-    // load the old value from EEPROM
-    uint8_t old_value[type_size((enum ap_var_type)header.type)];
-    _storage.read_block(old_value, pofs+sizeof(header), sizeof(old_value));
-    const AP_Param *ap = (const AP_Param *)&old_value[0];
 
     // find the new variable in the variable structures
     enum ap_var_type ptype;
@@ -1593,14 +1614,14 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
     }
 
     // see if we can load it from EEPROM
-    if (ap2->load()) {
+    if (!(flags & CONVERT_FLAG_FORCE) && ap2->configured_in_storage()) {
         // the new parameter already has a value set by the user, or
         // has already been converted
         return;
     }
 
     // see if they are the same type and no scaling applied
-    if (ptype == (ap_var_type)header.type && is_equal(scaler, 1.0f)) {
+    if (ptype == info->type && is_equal(scaler, 1.0f) && flags == 0) {
         // copy the value over only if the new parameter does not already
         // have the old value (via a default).
         if (memcmp(ap2, ap, sizeof(old_value)) != 0) {
@@ -1608,9 +1629,13 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
             // and save
             ap2->save();
         }
-    } else if (ptype <= AP_PARAM_FLOAT && header.type <= AP_PARAM_FLOAT) {
+    } else if (ptype <= AP_PARAM_FLOAT && info->type <= AP_PARAM_FLOAT) {
         // perform scalar->scalar conversion
-        float v = ap->cast_to_float((enum ap_var_type)header.type);
+        float v = ap->cast_to_float(info->type);
+        if (flags & CONVERT_FLAG_REVERSE) {
+            // convert a _REV parameter to a _REVERSED parameter
+            v = is_equal(v, -1.0f)?1:0;
+        }
         if (!is_equal(v,ap2->cast_to_float(ptype))) {
             // the value needs to change
             set_value(ptype, ap2, v * scaler);
@@ -1625,12 +1650,42 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
 
 
 // convert old vehicle parameters to new object parametersv
-void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size)
+void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags)
 {
     for (uint8_t i=0; i<table_size; i++) {
-        convert_old_parameter(&conversion_table[i], 1.0f);
+        convert_old_parameter(&conversion_table[i], 1.0f, flags);
     }
 }
+
+/*
+  move old class variables for a class that was sub-classed to one that isn't
+  For example, used when the AP_MotorsTri class changed from having its own parameter table
+  plus a subgroup for AP_MotorsMulticopter to just inheriting the AP_MotorsMulticopter var_info
+
+  This does not handle nesting beyond the single level shift
+*/
+void AP_Param::convert_parent_class(uint8_t param_key, void *object_pointer,
+                                    const struct AP_Param::GroupInfo *group_info)
+{
+    for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
+        struct ConversionInfo info;
+        info.old_key = param_key;
+        info.type = (ap_var_type)group_info[i].type;
+        info.new_name = nullptr;
+        info.old_group_element = uint16_t(group_info[i].idx)<<6;
+        uint8_t old_value[type_size(info.type)];
+        AP_Param *ap = (AP_Param *)&old_value[0];
+        
+        if (!AP_Param::find_old_parameter(&info, ap)) {
+            // the parameter wasn't set in the old eeprom
+            continue;
+        }
+
+        uint8_t *new_value = group_info[i].offset + (uint8_t *)object_pointer;
+        memcpy(new_value, old_value, sizeof(old_value));
+    }
+}
+
 
 /*
   set a parameter to a float value
@@ -1699,7 +1754,7 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value)
 /*
   load a default set of parameters from a file
  */
-bool AP_Param::load_defaults_file(const char *filename)
+bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
 {
     if (filename == nullptr) {
         return false;
@@ -1721,10 +1776,14 @@ bool AP_Param::load_defaults_file(const char *filename)
             continue;
         }
         if (!find_def_value_ptr(pname)) {
-            fclose(f);
-            ::printf("invalid param %s in defaults file\n", pname);
-            AP_HAL::panic("AP_Param: Invalid param in defaults file");
-            return false;
+            if (panic_on_error) {
+                fclose(f);
+                ::printf("invalid param %s in defaults file\n", pname);
+                AP_HAL::panic("AP_Param: Invalid param in defaults file");
+                return false;
+            } else {
+                continue;
+            }
         }
         num_defaults++;
     }
@@ -1759,9 +1818,7 @@ bool AP_Param::load_defaults_file(const char *filename)
         }
         const float *def_value_ptr = find_def_value_ptr(pname);
         if (!def_value_ptr) {
-            fclose(f);
-            AP_HAL::panic("AP_Param: Invalid param in defaults file");
-            return false;
+            continue;
         }
         param_overrides[idx].def_value_ptr = def_value_ptr;
         param_overrides[idx].value = value;
@@ -1773,7 +1830,9 @@ bool AP_Param::load_defaults_file(const char *filename)
             AP_HAL::panic("AP_Param: Failed to set param default");
             return false;
         }
-        vp->set_float(value, var_type);
+        if (!vp->configured_in_storage()) {
+            vp->set_float(value, var_type);
+        }
     }
     fclose(f);
 

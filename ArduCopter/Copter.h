@@ -46,8 +46,8 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>         // Mission command library
 #include <AC_PID/AC_PID.h>             // PID library
 #include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
@@ -202,9 +202,9 @@ private:
     AP_RPM rpm_sensor;
 
     // Inertial Navigation EKF
-    NavEKF EKF{&ahrs, barometer, rangefinder};
     NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rangefinder, EKF, EKF2, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -325,47 +325,14 @@ private:
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
 
-    // setup FRAME_MAV_TYPE
-#if (FRAME_CONFIG == QUAD_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
-#elif (FRAME_CONFIG == TRI_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_TRICOPTER
-#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_HEXAROTOR
-#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_OCTOROTOR
-#elif (FRAME_CONFIG == HELI_FRAME)
- #define FRAME_MAV_TYPE MAV_TYPE_HELICOPTER
-#elif (FRAME_CONFIG == SINGLE_FRAME || FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a quad
- #define FRAME_MAV_TYPE MAV_TYPE_QUADROTOR
-#else
- #error Unrecognised frame type
-#endif
-
     // Motor Output
-#if FRAME_CONFIG == QUAD_FRAME
- #define MOTOR_CLASS AP_MotorsQuad
-#elif FRAME_CONFIG == TRI_FRAME
- #define MOTOR_CLASS AP_MotorsTri
-#elif FRAME_CONFIG == HEXA_FRAME
- #define MOTOR_CLASS AP_MotorsHexa
-#elif FRAME_CONFIG == Y6_FRAME
- #define MOTOR_CLASS AP_MotorsY6
-#elif FRAME_CONFIG == OCTA_FRAME
- #define MOTOR_CLASS AP_MotorsOcta
-#elif FRAME_CONFIG == OCTA_QUAD_FRAME
- #define MOTOR_CLASS AP_MotorsOctaQuad
-#elif FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli_Single
-#elif FRAME_CONFIG == SINGLE_FRAME
- #define MOTOR_CLASS AP_MotorsSingle
-#elif FRAME_CONFIG == COAX_FRAME
- #define MOTOR_CLASS AP_MotorsCoax
 #else
- #error Unrecognised frame type
+ #define MOTOR_CLASS AP_MotorsMulticopter
 #endif
 
-    MOTOR_CLASS motors;
+    MOTOR_CLASS *motors;
 
     // GPS variables
     // Sometimes we need to remove the scaling for distance calcs
@@ -516,14 +483,10 @@ private:
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-#if FRAME_CONFIG == HELI_FRAME
-    AC_AttitudeControl_Heli attitude_control;
-#else
-    AC_AttitudeControl_Multi attitude_control;
-#endif
-    AC_PosControl pos_control;
-    AC_WPNav wp_nav;
-    AC_Circle circle_nav;
+    AC_AttitudeControl *attitude_control;
+    AC_PosControl *pos_control;
+    AC_WPNav *wp_nav;
+    AC_Circle *circle_nav;
 
     // Performance monitoring
     int16_t pmTest1;
@@ -563,8 +526,9 @@ private:
 #if AC_FENCE == ENABLED
     AC_Fence    fence;
 #endif
+#if AC_AVOID_ENABLED == ENABLED
     AC_Avoid avoid;
-
+#endif
     // Rally library
 #if AC_RALLY == ENABLED
     AP_Rally_Copter rally;
@@ -644,6 +608,9 @@ private:
         float takeoff_alt_cm;
     } gndeffect_state;
 
+    // set when we are upgrading parameters from 3.4
+    bool upgrading_frame_params;
+    
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -686,6 +653,7 @@ private:
     bool ins_checks(bool display_failure);
     bool board_voltage_checks(bool display_failure);
     bool parameter_checks(bool display_failure);
+    bool motor_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
     bool barometer_checks(bool display_failure);
     void update_using_interlock();
@@ -711,13 +679,12 @@ private:
     void gcs_send_deferred(void);
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
-    void send_limits_status(mavlink_channel_t chan);
+    void send_fence_status(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void send_hwstatus(mavlink_channel_t chan);
-    void send_servo_out(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
@@ -1092,7 +1059,7 @@ private:
     bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check);
     bool check_duplicate_auxsw(void);
     void reset_control_switch();
-    uint8_t read_3pos_switch(int16_t radio_in);
+    uint8_t read_3pos_switch(uint8_t chan);
     void read_aux_switches();
     void init_aux_switches();
     void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);
@@ -1108,6 +1075,10 @@ private:
     void update_auto_armed();
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
+    void set_default_frame_class();
+    void allocate_motors(void);
+    uint8_t get_frame_mav_type();
+    const char* get_frame_string();
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
     void takeoff_timer_start(float alt_cm);
