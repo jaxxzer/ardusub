@@ -18,26 +18,20 @@ void Sub::default_dead_zones()
 
 void Sub::init_rc_in()
 {
-	channel_pitch    = RC_Channel::rc_channel(0);
-    channel_roll     = RC_Channel::rc_channel(1);
-    channel_throttle = RC_Channel::rc_channel(2);
-    channel_yaw      = RC_Channel::rc_channel(3);
-    channel_forward  = RC_Channel::rc_channel(5);
-    channel_lateral  = RC_Channel::rc_channel(6);
+	channel_pitch    = RC_Channels::rc_channel(0);
+    channel_roll     = RC_Channels::rc_channel(1);
+    channel_throttle = RC_Channels::rc_channel(2);
+    channel_yaw      = RC_Channels::rc_channel(3);
+    channel_forward  = RC_Channels::rc_channel(5);
+    channel_lateral  = RC_Channels::rc_channel(6);
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
     channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
-    channel_yaw->set_angle(4500);
-    channel_throttle->set_range(0, 1000);
-    channel_forward->set_angle(4500);
-    channel_lateral->set_angle(4500);
-
-    channel_roll->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-    channel_pitch->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-    channel_yaw->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-    channel_forward->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-    channel_lateral->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+    channel_yaw->set_angle(ROLL_PITCH_INPUT_MAX);
+    channel_throttle->set_range(1000);
+    channel_forward->set_angle(ROLL_PITCH_INPUT_MAX);
+    channel_lateral->set_angle(ROLL_PITCH_INPUT_MAX);
 
     // force throttle trim to 1100
     channel_throttle->set_radio_trim(1100);
@@ -69,7 +63,7 @@ void Sub::init_rc_in()
 void Sub::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
-    motors.set_frame_orientation(g.frame_configuration);
+    motors.set_frame_type_and_class(AP_Motors::MOTOR_FRAME_BLUEROV1 + g.frame_configuration, nullptr);
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
     motors.Init();                                              // motor initialisation
 
