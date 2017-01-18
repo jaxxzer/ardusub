@@ -95,12 +95,18 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
     AP_GROUPEND
 };
 
-void AP_Motors6DOF::setup_motors() {
-	    // call parent
-	    AP_MotorsMatrix::setup_motors();
+void AP_Motors6DOF::set_frame(uint8_t frame) {
+	setup_motors();
+}
+
+void AP_Motors6DOF::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) {
+    // remove existing motors
+    for (int8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        remove_motor(i);
+    }
 
 	    // hard coded config for supported frames
-	    switch(_flags.frame_orientation) {
+	    switch((sub_frame_t)frame_class) {
     	//				   Motor #				Roll Factor		Pitch Factor	Yaw Factor		Throttle Factor		Forward Factor		Lateral Factor	Testing Order
 	    case AS_MOTORS_BLUEROV1_FRAME:
 	    	add_motor_raw_6dof(AP_MOTORS_MOT_1,		0,				0,				-1.0f,			0,					1.0f,				0,				1);

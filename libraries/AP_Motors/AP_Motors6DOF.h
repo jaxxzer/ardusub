@@ -24,6 +24,17 @@ public:
     	AP_Param::setup_object_defaults(this, var_info);
     };
 
+    typedef enum {
+		SUB_FRAME_BLUEROV1,
+		SUB_FRAME_VECTORED,
+		SUB_FRAME_VECTORED_6DOF,
+		SUB_FRAME_VECTORED_6DOF_90DEG,
+		SUB_FRAME_SIMPLEROV_3,
+		SUB_FRAME_SIMPLEROV_4,
+		SUB_FRAME_SIMPLEROV_5,
+		SUB_FRAME_CUSTOM
+    } sub_frame_t;
+
     void setup_motors();
 
     void output_min() override;
@@ -32,6 +43,8 @@ public:
 
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
+
+    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // var_info for holding Parameter information
 	static const struct AP_Param::GroupInfo        var_info[];
