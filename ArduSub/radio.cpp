@@ -63,17 +63,13 @@ void Sub::init_rc_in()
 void Sub::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
-    motors.set_frame_type_and_class(AP_Motors::MOTOR_FRAME_BLUEROV1 + g.frame_configuration, nullptr);
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
-    motors.Init();                                              // motor initialisation
+    motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), (AP_Motors::motor_frame_type)0);
 
     for(uint8_t i = 0; i < 5; i++) {
     	hal.scheduler->delay(20);
         read_radio();
     }
-
-    // we want the input to be scaled correctly
-    channel_throttle->set_range_out(0,1000);
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed.
@@ -89,7 +85,7 @@ void Sub::init_rc_out()
     }
 
     // refresh auxiliary channel to function map
-    RC_Channel_aux::update_aux_servo_function();
+    SRV_Channels::update_aux_servo_function();
 }
 
 // enable_motor_output() - enable and output lowest possible value to motors
@@ -107,7 +103,7 @@ void Sub::read_radio()
 
     if (hal.rcin->new_input()) {
         ap.new_radio_frame = true;
-        RC_Channel::set_pwm_all();
+        RC_Channels::set_pwm_all();
 
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
@@ -117,13 +113,13 @@ void Sub::read_radio()
         }
 
         // update output on any aux channels, for manual passthru
-        RC_Channel_aux::output_ch_all();
+        SRV_Channels::output_ch_all();
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
 
         float dt = (tnow_ms - last_update_ms)*1.0e-3f;
-        rc_throttle_control_in_filter.apply(g.rc_3.get_control_in(), dt);
+        rc_throttle_control_in_filter.apply(channel_throttle->get_control_in(), dt);
         last_update_ms = tnow_ms;
     }
 }
