@@ -23,7 +23,7 @@ public:
     void                init(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-    virtual void        set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
+    void        		set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
@@ -61,7 +61,7 @@ protected:
     void                remove_motor(int8_t motor_num);
 
     // configures the motors for the defined frame_class and frame_type
-    void                setup_motors(motor_frame_class frame_class, motor_frame_type frame_type);
+    virtual void        setup_motors(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // normalizes the roll, pitch and yaw factors so maximum magnitude is 0.5
     void                normalise_rpy_factors();

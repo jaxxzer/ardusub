@@ -35,7 +35,7 @@ public:
 		SUB_FRAME_CUSTOM
     } sub_frame_t;
 
-    void setup_motors();
+    void setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     void output_min() override;
 
@@ -43,8 +43,6 @@ public:
 
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
-
-    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // var_info for holding Parameter information
 	static const struct AP_Param::GroupInfo        var_info[];
