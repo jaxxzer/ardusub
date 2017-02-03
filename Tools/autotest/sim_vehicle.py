@@ -352,7 +352,7 @@ _options_for_frame = {
     # SUB
     "vectored": {
         "model": "vectored",
-        "waf_target": "bin/ardusub-vectored",
+        "waf_target": "bin/ardusub",
         "default_params_filename": "Sub.parm",
     },
     # SIM
