@@ -3,15 +3,14 @@
 
 #include "AP_LeakDetector.h"
 
-class AP_LeakDetector_Backend
-{
+class AP_LeakDetector_Backend {
 public:
-	AP_LeakDetector_Backend(AP_LeakDetector &_leak_detector, AP_LeakDetector::LeakDetector_State &_state);
-	virtual void read(void) = 0;
+    AP_LeakDetector_Backend(AP_LeakDetector &_leak_detector, AP_LeakDetector::LeakDetector_State &_state);
+    virtual void read(void) = 0;
 
 protected:
-	AP_LeakDetector &leak_detector;
-	AP_LeakDetector::LeakDetector_State &state;
+    AP_LeakDetector &leak_detector;
+    AP_LeakDetector::LeakDetector_State &state;
 
 };
 
