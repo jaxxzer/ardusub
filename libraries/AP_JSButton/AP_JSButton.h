@@ -13,15 +13,6 @@ public:
     ///
     JSButton();
 
-    /// roll - return input channel number for roll / aileron input
-    uint8_t function(bool shift = false) const {
-    	if ( shift ) {
-    		return _sfunction;
-    	} else {
-    		return _function;
-    	}
-    }
-
     // button function enum
     // value list for parameter convenience:
     // @Values: 0:Disabled,1:shift,2:arm_toggle,3:arm,4:disarm,5:mode_toggle,6:mode_stab,7:mode_althold,21:mount_center,22:mount_tilt_up,23:mount_tilt_down,24:camera_trigger,25:camera_source_toggle,26:mount_pan_right,27:mount_pan_left,31:light1_cycle,32:lights1_brighter,
@@ -82,10 +73,10 @@ public:
 		k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
 	} button_function_t;
 
-	void set_default(button_function_t f, button_function_t sf) {
-		_function.set_default(f);
-		_sfunction.set_default(sf);
-	}
+    /// roll - return input channel number for roll / aileron input
+    uint8_t function(bool shift = false) const;
+
+    void set_default(button_function_t f, button_function_t sf);
 
     static const struct AP_Param::GroupInfo var_info[];
 

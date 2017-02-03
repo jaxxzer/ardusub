@@ -27,3 +27,16 @@ JSButton::JSButton(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+uint8_t JSButton::function(bool shift) const {
+    if ( shift ) {
+        return _sfunction;
+    } else {
+        return _function;
+    }
+}
+
+void JSButton::set_default(button_function_t f, button_function_t sf) {
+    _function.set_default(f);
+    _sfunction.set_default(sf);
+}
