@@ -1,5 +1,4 @@
-#ifndef AP_JSBUTTON_H
-#define AP_JSBUTTON_H
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 
@@ -82,4 +81,3 @@ private:
     AP_Int8 _function;
     AP_Int8 _sfunction;
 };
-#endif
