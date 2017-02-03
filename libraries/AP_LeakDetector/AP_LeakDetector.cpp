@@ -11,14 +11,14 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 	// @Description: Pin that the leak detector is connected to
     // @Values: -1:Disabled,50:Pixhawk Aux1,51:Pixhawk Aux2,52:Pixhawk Aux3,53:Pixhawk Aux4,54:Pixhawk Aux5,55:Pixhawk Aux6,13:Pixhawk 3.3ADC1,14:Pixhawk 3.3ADC2,15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("1_PIN", 0, AP_LeakDetector, _pin[0], -1),
+    AP_GROUPINFO("1_PIN", 1, AP_LeakDetector, _pin[0], -1),
 
 	// @Param: 1_LOGIC
 	// @DisplayName: Default reading of leak detector when dry
 	// @Description: Default reading of leak detector when dry
 	// @Values: 0:Low,1:High
 	// @User: Standard
-	AP_GROUPINFO("1_LOGIC", 1, AP_LeakDetector, _default_reading[0], 0),
+	AP_GROUPINFO("1_LOGIC", 2, AP_LeakDetector, _default_reading[0], 0),
 
 #if LEAKDETECTOR_MAX_INSTANCES > 1
 	// @Param: 2_PIN
@@ -43,14 +43,14 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 	// @Description: Pin that the leak detector is connected to
 	// @Values: -1:Disabled,50:Pixhawk Aux1,51:Pixhawk Aux2,52:Pixhawk Aux3,53:Pixhawk Aux4,54:Pixhawk Aux5,55:Pixhawk Aux6,13:Pixhawk 3.3ADC1,14:Pixhawk 3.3ADC2,15:Pixhawk 6.6ADC
 	// @User: Standard
-    AP_GROUPINFO("3_PIN", 6, AP_LeakDetector, _pin[2], -1),
+    AP_GROUPINFO("3_PIN", 5, AP_LeakDetector, _pin[2], -1),
 
 	// @Param: 3_LOGIC
 	// @DisplayName: Default reading of leak detector when dry
 	// @Description: Default reading of leak detector when dry
 	// @Values: 0:Low,1:High
 	// @User: Standard
-	AP_GROUPINFO("3_LOGIC", 7, AP_LeakDetector, _default_reading[2], 0),
+	AP_GROUPINFO("3_LOGIC", 6, AP_LeakDetector, _default_reading[2], 0),
 
 #endif
 
