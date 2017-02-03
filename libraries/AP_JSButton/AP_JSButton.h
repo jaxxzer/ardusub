@@ -1,8 +1,6 @@
 #ifndef AP_JSBUTTON_H
 #define AP_JSBUTTON_H
 
-#include <inttypes.h>
-#include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 
 class JSButton

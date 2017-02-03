@@ -1,4 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
 #include "AP_JSButton.h"
 
 const AP_Param::GroupInfo JSButton::var_info[] = {
