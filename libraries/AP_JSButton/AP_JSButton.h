@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #ifndef AP_JSBUTTON_H
 #define AP_JSBUTTON_H
 
