@@ -6,50 +6,34 @@
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsMulticopter.h>
 
+// default angle controller PID gains
+// (Sub-specific defaults for parent class)
+#define AC_ATC_SUB_ANGLE_P             6.0f
+#define AC_ATC_SUB_ACCEL_Y_MAX         110000.0f
+
 // default rate controller PID gains
-#ifndef AC_ATC_MULTI_RATE_RP_P
-  # define AC_ATC_MULTI_RATE_RP_P           0.135f
-#endif
-#ifndef AC_ATC_MULTI_RATE_RP_I
-  # define AC_ATC_MULTI_RATE_RP_I           0.090f
-#endif
-#ifndef AC_ATC_MULTI_RATE_RP_D
-  # define AC_ATC_MULTI_RATE_RP_D           0.0036f
-#endif
-#ifndef AC_ATC_MULTI_RATE_RP_IMAX
- # define AC_ATC_MULTI_RATE_RP_IMAX         0.444f
-#endif
-#ifndef AC_ATC_MULTI_RATE_RP_FILT_HZ
- # define AC_ATC_MULTI_RATE_RP_FILT_HZ      20.0f
-#endif
-#ifndef AC_ATC_MULTI_RATE_YAW_P
- # define AC_ATC_MULTI_RATE_YAW_P           0.180f
-#endif
-#ifndef AC_ATC_MULTI_RATE_YAW_I
- # define AC_ATC_MULTI_RATE_YAW_I           0.018f
-#endif
-#ifndef AC_ATC_MULTI_RATE_YAW_D
- # define AC_ATC_MULTI_RATE_YAW_D           0.0f
-#endif
-#ifndef AC_ATC_MULTI_RATE_YAW_IMAX
- # define AC_ATC_MULTI_RATE_YAW_IMAX        0.222f
-#endif
-#ifndef AC_ATC_MULTI_RATE_YAW_FILT_HZ
- # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     5.0f
-#endif
+#define AC_ATC_SUB_RATE_RP_P           0.135f
+#define AC_ATC_SUB_RATE_RP_I           0.090f
+#define AC_ATC_SUB_RATE_RP_D           0.0036f
+#define AC_ATC_SUB_RATE_RP_IMAX        0.444f
+#define AC_ATC_SUB_RATE_RP_FILT_HZ     30.0f
+#define AC_ATC_SUB_RATE_YAW_P          0.180f
+#define AC_ATC_SUB_RATE_YAW_I          0.018f
+#define AC_ATC_SUB_RATE_YAW_D          0.0f
+#define AC_ATC_SUB_RATE_YAW_IMAX       0.222f
+#define AC_ATC_SUB_RATE_YAW_FILT_HZ    5.0f
 
-
-class AC_AttitudeControl_Multi : public AC_AttitudeControl {
+class AC_AttitudeControl_Sub : public AC_AttitudeControl {
 public:
-	AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
+	AC_AttitudeControl_Sub(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
 
 	// empty destructor to suppress compiler warning
-	virtual ~AC_AttitudeControl_Multi() {}
+	virtual ~AC_AttitudeControl_Sub() {}
 
     // pid accessors
     AC_PID& get_rate_roll_pid() { return _pid_rate_roll; }
     AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
-    AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
+	AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -58,7 +42,7 @@ public:
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
     // calculate total body frame throttle required to produce the given earth frame throttle
-    float get_throttle_boosted(float throttle_in);
+	float get_throttle_boosted(float throttle_in);
 
     // set desired throttle vs attitude mixing (actual mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle

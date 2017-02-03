@@ -1,9 +1,9 @@
-#include "AC_AttitudeControl_Multi.h"
+#include "AC_AttitudeControl_Sub.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
 // table of user settable parameters
-const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
+const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // parameters from parent vehicle
     AP_NESTEDGROUPINFO(AC_AttitudeControl, 0),
 
@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Multi, AC_PID),
+    AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Sub, AC_PID),
 
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Multi, AC_PID),
+    AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Sub, AC_PID),
 
     // @Param: RAT_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
@@ -119,44 +119,51 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Multi, AC_PID),
+    AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Sub, AC_PID),
 
     // @Param: THR_MIX_MIN
     // @DisplayName: Throttle Mix Minimum
     // @Description: Throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     // @Range: 0.1 0.25
     // @User: Advanced
-    AP_GROUPINFO("THR_MIX_MIN", 4, AC_AttitudeControl_Multi, _thr_mix_min, AC_ATTITUDE_CONTROL_MIN_DEFAULT),
+    AP_GROUPINFO("THR_MIX_MIN", 4, AC_AttitudeControl_Sub, _thr_mix_min, AC_ATTITUDE_CONTROL_MIN_DEFAULT),
 
     // @Param: THR_MIX_MAX
     // @DisplayName: Throttle Mix Maximum
     // @Description: Throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
     // @Range: 0.5 0.9
     // @User: Advanced
-    AP_GROUPINFO("THR_MIX_MAX", 5, AC_AttitudeControl_Multi, _thr_mix_max, AC_ATTITUDE_CONTROL_MAX_DEFAULT),
+    AP_GROUPINFO("THR_MIX_MAX", 5, AC_AttitudeControl_Sub, _thr_mix_max, AC_ATTITUDE_CONTROL_MAX_DEFAULT),
 
     // @Param: THR_MIX_MAN
     // @DisplayName: Throttle Mix Manual
     // @Description: Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)
     // @Range: 0.5 0.9
     // @User: Advanced
-    AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
+    AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Sub, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
     AP_GROUPEND
 };
 
-AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
+AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
     AC_AttitudeControl(ahrs, aparm, motors, dt),
     _motors_multi(motors),
-    _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_YAW_FILT_HZ, dt)
+    _pid_rate_roll(AC_ATC_SUB_RATE_RP_P, AC_ATC_SUB_RATE_RP_I, AC_ATC_SUB_RATE_RP_D, AC_ATC_SUB_RATE_RP_IMAX, AC_ATC_SUB_RATE_RP_FILT_HZ, dt),
+    _pid_rate_pitch(AC_ATC_SUB_RATE_RP_P, AC_ATC_SUB_RATE_RP_I, AC_ATC_SUB_RATE_RP_D, AC_ATC_SUB_RATE_RP_IMAX, AC_ATC_SUB_RATE_RP_FILT_HZ, dt),
+	_pid_rate_yaw(AC_ATC_SUB_RATE_YAW_P, AC_ATC_SUB_RATE_YAW_I, AC_ATC_SUB_RATE_YAW_D, AC_ATC_SUB_RATE_YAW_IMAX, AC_ATC_SUB_RATE_YAW_FILT_HZ, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // Sub-specific defaults for parent class
+    _p_angle_roll.kP().set_default(AC_ATC_SUB_ANGLE_P);
+    _p_angle_pitch.kP().set_default(AC_ATC_SUB_ANGLE_P);
+    _p_angle_yaw.kP().set_default(AC_ATC_SUB_ANGLE_P);
+
+    _accel_yaw_max.set_default(AC_ATC_SUB_ACCEL_Y_MAX);
 }
 
 // Update Alt_Hold angle maximum
-void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
+void AC_AttitudeControl_Sub::update_althold_lean_angle_max(float throttle_in)
 {
     // calc maximum tilt angle based on throttle
     float thr_max = _motors_multi.get_throttle_thrust_max();
@@ -171,7 +178,7 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
     _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max);
 }
 
-void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
+void AC_AttitudeControl_Sub::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
 {
     _throttle_in = throttle_in;
     update_althold_lean_angle_max(throttle_in);
@@ -189,7 +196,7 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
 
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1
-float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
+float AC_AttitudeControl_Sub::get_throttle_boosted(float throttle_in)
 {
     if (!_angle_boost_enabled) {
         _angle_boost = 0;
@@ -209,14 +216,14 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
 
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1
-float AC_AttitudeControl_Multi::get_throttle_avg_max(float throttle_in)
+float AC_AttitudeControl_Sub::get_throttle_avg_max(float throttle_in)
 {
     throttle_in = constrain_float(throttle_in, 0.0f, 1.0f);
     return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_motors.get_throttle_hover()*_throttle_rpy_mix);
 }
 
 // update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
-void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
+void AC_AttitudeControl_Sub::update_throttle_rpy_mix()
 {
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
     if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
@@ -229,7 +236,7 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
 
-void AC_AttitudeControl_Multi::rate_controller_run()
+void AC_AttitudeControl_Sub::rate_controller_run()
 {
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
@@ -242,7 +249,7 @@ void AC_AttitudeControl_Multi::rate_controller_run()
 }
 
 // sanity check parameters.  should be called once before takeoff
-void AC_AttitudeControl_Multi::parameter_sanity_check()
+void AC_AttitudeControl_Sub::parameter_sanity_check()
 {
     // sanity check throttle mix parameters
     if (_thr_mix_man < 0.1f || _thr_mix_man > 4.0f) {
