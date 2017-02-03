@@ -192,9 +192,9 @@ private:
 #endif
 
     // Inertial Navigation EKF
-    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2 {&ahrs, barometer, rangefinder};
+    NavEKF3 EKF3 {&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -205,7 +205,7 @@ private:
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow {ahrs};
 #endif
 
     // gnd speed limit required to observe optical flow sensor limits
@@ -469,9 +469,9 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
-	uint32_t last_pilot_heading;
-	uint32_t last_pilot_yaw_input_ms;
-	uint32_t fs_terrain_recover_start_ms = 0;
+    uint32_t last_pilot_heading;
+    uint32_t last_pilot_yaw_input_ms;
+    uint32_t fs_terrain_recover_start_ms = 0;
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
@@ -701,7 +701,9 @@ private:
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
-    bool gcs_set_mode(uint8_t mode) { return set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND); }
+    bool gcs_set_mode(uint8_t mode) {
+        return set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
+    }
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
     bool mode_requires_GPS(control_mode_t mode);
