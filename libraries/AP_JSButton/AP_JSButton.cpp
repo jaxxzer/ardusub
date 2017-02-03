@@ -19,7 +19,6 @@ const AP_Param::GroupInfo JSButton::var_info[] = {
     AP_GROUPEND
 };
 
-// object constructor.
 JSButton::JSButton(void)
 {
     AP_Param::setup_object_defaults(this, var_info);

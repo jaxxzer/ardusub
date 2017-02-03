@@ -5,12 +5,10 @@
 class JSButton
 {
 public:
-    /// Constructor
-    ///
     JSButton();
 
-    // button function enum
-    // value list for parameter convenience:
+    // Button functions
+    // Value list for parameter convenience:
     // @Values: 0:Disabled,1:shift,2:arm_toggle,3:arm,4:disarm,5:mode_toggle,6:mode_stab,7:mode_althold,21:mount_center,22:mount_tilt_up,23:mount_tilt_down,24:camera_trigger,25:camera_source_toggle,26:mount_pan_right,27:mount_pan_left,31:light1_cycle,32:lights1_brighter,
     // 33:lights1_dimmer,34:lights2_cycle,35:lights2_brighter,36:lights2_dimmer,41:gain_toggle,42:gain_inc,43:gain_dec,44:trim_roll_inc,45:trim_roll_dec,46:trim_pitch_inc,47:trim_pitch_dec,48:input_hold_toggle,51:relay_1_on,52:relay_1_off,53:relay_1_toggle,52:relay_2_on,53:relay_2_off,54:relay_2_toggle,91:custom_1,92:custom_2,93:custom_3,94:custom_4,95:custom_5,96:custom_6
     typedef enum
@@ -69,15 +67,17 @@ public:
 		k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
 	} button_function_t;
 
-    /// roll - return input channel number for roll / aileron input
+	// If shift is false, returns the function assigned to this button
+	// If shift is true, returns the shift function assigned to this button
     uint8_t function(bool shift = false) const;
 
+    // Sets the default function and shift function parameter values for this button
     void set_default(button_function_t f, button_function_t sf);
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    // button mappings
+    // Button mappings
     AP_Int8 _function;
     AP_Int8 _sfunction;
 };
