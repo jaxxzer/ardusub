@@ -10,5 +10,4 @@ public:
 protected:
     AP_LeakDetector &leak_detector;
     AP_LeakDetector::LeakDetector_State &state;
-
 };

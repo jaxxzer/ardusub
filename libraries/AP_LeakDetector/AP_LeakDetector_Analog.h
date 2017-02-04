@@ -10,5 +10,4 @@ public:
 
 private:
     AP_HAL::AnalogSource *source;
-
 };
