@@ -1,5 +1,4 @@
-#ifndef AP_LEAKDETECTOR_BACKEND_H
-#define AP_LEAKDETECTOR_BACKEND_H
+#pragma once
 
 #include "AP_LeakDetector.h"
 
@@ -13,5 +12,3 @@ protected:
     AP_LeakDetector::LeakDetector_State &state;
 
 };
-
-#endif

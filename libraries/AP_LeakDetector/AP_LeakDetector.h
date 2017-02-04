@@ -1,5 +1,4 @@
-#ifndef AP_LEAKDETECTOR_H
-#define AP_LEAKDETECTOR_H
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 
@@ -50,5 +49,3 @@ private:
     AP_Int8 _pin[LEAKDETECTOR_MAX_INSTANCES]; // pin that detector is connected to
     AP_Int8 _default_reading[LEAKDETECTOR_MAX_INSTANCES]; // default reading when leak detector is dry
 };
-
-#endif

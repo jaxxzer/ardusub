@@ -1,5 +1,4 @@
-#ifndef AP_LEAKDETECTOR_ANALOG_H
-#define AP_LEAKDETECTOR_ANALOG_H
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_LeakDetector_Backend.h"
@@ -13,5 +12,3 @@ private:
     AP_HAL::AnalogSource *source;
 
 };
-
-#endif
