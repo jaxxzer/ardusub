@@ -61,8 +61,8 @@ AP_LeakDetector::AP_LeakDetector() :
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    memset(state,0,sizeof(state));
-    memset(drivers,0,sizeof(drivers));
+    memset(_state,0,sizeof(_state));
+    memset(_drivers,0,sizeof(_drivers));
 };
 
 void AP_LeakDetector::init()
@@ -70,15 +70,15 @@ void AP_LeakDetector::init()
     for (int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
         switch (_pin[i]) {
         case 50 ... 55:
-            state[i].instance = i;
-            drivers[i] = new AP_LeakDetector_Digital(*this, state[i]);
+            _state[i].instance = i;
+            _drivers[i] = new AP_LeakDetector_Digital(*this, _state[i]);
             break;
         case 13 ... 15:
-            state[i].instance = i;
-            drivers[i] = new AP_LeakDetector_Analog(*this, state[i]);
+            _state[i].instance = i;
+            _drivers[i] = new AP_LeakDetector_Analog(*this, _state[i]);
             break;
         default:
-            drivers[i] = NULL;
+            _drivers[i] = NULL;
             break;
         }
     }
@@ -89,9 +89,9 @@ bool AP_LeakDetector::update()
     uint32_t tnow = AP_HAL::millis();
 
     for (int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
-        if (drivers[i] != NULL) {
-            drivers[i]->read();
-            if (state[i].status) {
+        if (_drivers[i] != NULL) {
+            _drivers[i]->read();
+            if (_state[i].status) {
                 _last_detect_ms = tnow;
             }
         }

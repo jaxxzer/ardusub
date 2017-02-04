@@ -40,8 +40,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_LeakDetector_Backend *drivers[LEAKDETECTOR_MAX_INSTANCES];
-    LeakDetector_State state[LEAKDETECTOR_MAX_INSTANCES];
+    AP_LeakDetector_Backend *_drivers[LEAKDETECTOR_MAX_INSTANCES];
+    LeakDetector_State _state[LEAKDETECTOR_MAX_INSTANCES];
 
     bool _status; // current status, true if leak detected, false if all sensors dry
     uint32_t _last_detect_ms;
