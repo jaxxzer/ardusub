@@ -11,7 +11,8 @@ class AP_LeakDetector_Backend;
 
 class AP_LeakDetector {
 
-    friend class AP_LeakDetector_Backend;
+    friend class AP_LeakDetector_Analog;
+    friend class AP_LeakDetector_Digital;
 
 public:
     AP_LeakDetector(); // constructor
@@ -36,10 +37,6 @@ public:
     void init(void); // initialize all drivers
     bool update(void); // update all instances, should be called frequently by vehicle code
 
-    AP_Int8 _type[LEAKDETECTOR_MAX_INSTANCES]; // Analog, Digital, Mavlink
-    AP_Int8 _pin[LEAKDETECTOR_MAX_INSTANCES]; // pin that detector is connected to
-    AP_Int8 _default_reading[LEAKDETECTOR_MAX_INSTANCES]; // default reading when leak detector is dry
-
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -49,6 +46,9 @@ private:
     bool _status; // current status, true if leak detected, false if all sensors dry
     uint32_t _last_detect_ms;
 
+    AP_Int8 _type[LEAKDETECTOR_MAX_INSTANCES]; // Analog, Digital, Mavlink
+    AP_Int8 _pin[LEAKDETECTOR_MAX_INSTANCES]; // pin that detector is connected to
+    AP_Int8 _default_reading[LEAKDETECTOR_MAX_INSTANCES]; // default reading when leak detector is dry
 };
 
 #endif
