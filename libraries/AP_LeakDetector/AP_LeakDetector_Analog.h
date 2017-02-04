@@ -1,7 +1,7 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_LeakDetector_Backend.h"
+#include <AP_HAL/AP_HAL.h>
 
 class AP_LeakDetector_Analog : public AP_LeakDetector_Backend {
 public:

@@ -1,6 +1,4 @@
 #include "AP_LeakDetector.h"
-
-#include <AP_HAL/AP_HAL.h>
 #include "AP_LeakDetector_Analog.h"
 #include "AP_LeakDetector_Digital.h"
 

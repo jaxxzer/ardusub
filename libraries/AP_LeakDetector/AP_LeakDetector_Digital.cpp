@@ -1,7 +1,5 @@
 #include "AP_LeakDetector_Digital.h"
-
 #include <AP_HAL/AP_HAL.h>
-#include "../AP_LeakDetector/AP_LeakDetector.h"
 
 extern const AP_HAL::HAL& hal;
 
