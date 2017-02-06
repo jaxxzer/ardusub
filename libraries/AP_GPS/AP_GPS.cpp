@@ -306,7 +306,7 @@ AP_GPS::detect_instance(uint8_t instance)
     if(_type[instance] == GPS_TYPE_MAVLINK) {
 		// check for if user selected MAVLINK GPS
 		// Also not possible to autodetect, and does not require a UART
-		//_broadcast_gps_type("MAVLINK", instance, -1); //baud rate isn't valid
+		_broadcast_gps_type("MAVLINK", instance, -1); //baud rate isn't valid
 		drivers[instance] = new AP_GPS_MAVLINK(*this, state[instance]); //does not require a UART, sentences come from GCS via mavlink
     	state[instance].instance = instance;
     	state[instance].status = NO_FIX;
