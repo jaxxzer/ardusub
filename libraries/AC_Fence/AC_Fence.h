@@ -135,7 +135,7 @@ private:
     AP_Int8         _enabled_fences;        // bit mask holding which fences are enabled
     AP_Int8         _action;                // recovery action specified by user
     AP_Float        _alt_max;               // altitude upper limit in meters
-    AP_Float		_alt_min;
+    AP_Float		_alt_min;               // altitude lower limit in meters
     AP_Float        _circle_radius;         // circle fence radius in meters
     AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
     AP_Int8         _total;                 // number of polygon points saved in eeprom
