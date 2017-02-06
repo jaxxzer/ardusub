@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 AP_Baro::AP_Baro()
 {
     memset(sensors, 0, sizeof(sensors));
-    for(int i = 0 ; i < BARO_MAX_INSTANCES; i++) {
+    for(uint8_t i = 0 ; i < BARO_MAX_INSTANCES; i++) {
     	set_precision_multiplier(i, 1);
     }
     AP_Param::setup_object_defaults(this, var_info);
