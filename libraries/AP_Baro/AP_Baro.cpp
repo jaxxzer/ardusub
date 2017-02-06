@@ -50,7 +50,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, sensors[0].ground_pressure, 0),
+    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, sensors[1].ground_pressure, 0),
 
     // @Param: TEMP
     // @DisplayName: ground temperature
@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("TEMP", 3, AP_Baro, sensors[0].ground_temperature, 0),
+    AP_GROUPINFO("TEMP", 3, AP_Baro, sensors[1].ground_temperature, 0),
 
     // index 4 reserved for old AP_Int8 version in legacy FRAM
     //AP_GROUPINFO("ALT_OFFSET", 4, AP_Baro, _alt_offset, 0),
@@ -92,19 +92,6 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Description: This sets the specific gravity of the fluid when flying an underwater ROV. Set to 1.0 for freshwater or 1.024 for saltwater
     // @Values: 1.0:Fresh Water,1.024:Salt Water
     AP_GROUPINFO("SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0),
-
-    // @Param: BASE_PRESS
-    // @DisplayName: Base Pressure (For water depth measurement)
-    // @Description: Base diving pressure. This is the ambient air pressure at launch site, and is persistent between boots.
-    // @Units: pascals
-    AP_GROUPINFO("BASE_PRESS", 9, AP_Baro, _base_pressure, 101325),
-
-    // @Param: BASE_RESET
-    // @DisplayName: Reset Base Pressure (For water depth measurement)
-    // @Description: Set to 1 (reset) to reset base pressure on next boot
-    // @Values: 0:Keep,1:Reset
-	// @RebootRequired: True
-    AP_GROUPINFO("BASE_RESET", 10, AP_Baro, _reset_base_pressure, 0),
     
     AP_GROUPEND
 };
@@ -180,15 +167,7 @@ void AP_Baro::calibrate()
         if (count[i] == 0) {
             sensors[i].calibrated = false;
         } else {
-        	if(sensors[i].type == BARO_TYPE_AIR) {
-        		sensors[i].ground_pressure.set_and_save(sum_pressure[i] / count[i]);
-        	} else { // for a water pressure sensor, we will only recalibrate on boot, if the BASE_RESET parameter is set
-        		if(_reset_base_pressure) {
-        			_base_pressure.set_and_save(sum_pressure[i] / count[i]);
-        			_reset_base_pressure.set_and_save(0);
-        		}
-        		sensors[i].ground_pressure.set_and_save(_base_pressure);
-        	}
+        	sensors[i].ground_pressure.set_and_save(sum_pressure[i] / count[i]);
             sensors[i].ground_temperature.set_and_save(sum_temperature[i] / count[i]);
         }
     }
@@ -229,10 +208,6 @@ void AP_Baro::update_calibration()
             _EAS2TAS = 0;
         }
     }
-
-    // update and save base pressure (persistent between boots) with primary baro ground calibration (not persistent)
-    _base_pressure.set_and_save(get_ground_pressure());
-    _base_pressure.notify();
 }
 
 // return altitude difference in meters between current pressure and a

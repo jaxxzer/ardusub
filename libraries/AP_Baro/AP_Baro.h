@@ -111,7 +111,7 @@ public:
     void setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate, uint32_t last_update_ms);
 
     void set_primary_baro(uint8_t primary) { _primary_baro.set_and_save(primary); };
-    void set_type(uint8_t instance, uint8_t type) { sensors[instance].type = type; };
+    void set_type(uint8_t instance, uint8_t type) { sensors[instance].type = type; if (type == BARO_TYPE_WATER) sensors[instance].calibrated = true; };
     void set_precision_multiplier(uint8_t instance, uint8_t multiplier) { sensors[instance].precision_multiplier = multiplier; };
     
     // HIL variables
@@ -177,8 +177,6 @@ private:
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
     AP_Float							_specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
-    AP_Float							_base_pressure; // the ground_pressure for a water pressure sensor is persistent
-    AP_Int8								_reset_base_pressure; // reset the _base_pressure for a water pressure sensor on next boot
     bool                                _hil_mode:1;
 
     // when did we last notify the GCS of new pressure reference?

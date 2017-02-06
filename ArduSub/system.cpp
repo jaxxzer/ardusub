@@ -229,10 +229,9 @@ void Sub::init_ardupilot()
     ins.set_hil_mode();
 #endif
 
-    barometer.calibrate();
     barometer.update();
 
-    if (barometer.healthy(1)) { // We have an external MS58XX pressure sensor connected
+    if (barometer.num_instances() > 1) { // We have an external MS58XX pressure sensor connected
 
         barometer.set_primary_baro(1); // Set the primary baro to external MS58XX !!Changes and saves parameter value!!
 
@@ -265,14 +264,9 @@ void Sub::init_ardupilot()
 
     leak_detector.init();
 
-    // read Baro pressure at ground
-    //-----------------------------
-    init_barometer(true);
-
     // cope with MS5607 in place of MS5611 on fake pixhawks
     if (barometer.get_pressure(0) < 60000) {
         barometer.set_precision_multiplier(0, 2);
-        init_barometer(true); // recalibrate with correct scalar
     }
 
     // backwards compatibility
