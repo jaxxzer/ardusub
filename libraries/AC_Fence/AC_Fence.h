@@ -78,7 +78,7 @@ public:
     uint8_t get_action() const { return _action.get(); }
 
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
-    float get_safe_alt() const { return _alt_max - _margin; }
+    float get_safe_alt_max() const { return _alt_max - _margin; }
 
     /// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min - margin)
     float get_safe_alt_min() const { return _alt_min + _margin; }
