@@ -1099,6 +1099,15 @@ void GCS_MAVLINK::send_system_time(AP_GPS &gps)
         AP_HAL::millis());
 }
 
+/*
+ * send the SYSTEM_TIME message
+ */
+void GCS_MAVLINK::send_system_time(uint64_t time_epoch_us) {
+    mavlink_msg_system_time_send(
+        chan,
+        time_epoch_us,
+        AP_HAL::millis());
+}
 
 /*
   send RC_CHANNELS messages
