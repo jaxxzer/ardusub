@@ -544,7 +544,11 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time(sub.gps);
+        if (sub.gps.time_epoch_usec() == 0 && sub.system_time > 0) {
+            send_system_time(sub.system_time + 1000 * (AP_HAL::millis() - sub.system_time_offset));
+        } else {
+            send_system_time(sub.gps);
+        }
         break;
 
     case MSG_SERVO_OUT:
@@ -967,6 +971,28 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         }
         sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
         sub.pmTest1++;
+        break;
+    }
+
+    case MAVLINK_MSG_ID_SYSTEM_TIME: {
+        mavlink_system_time_t packet;
+        mavlink_msg_system_time_decode(msg, &packet);
+        if(packet.time_boot_ms == 0) {
+            sub.system_time = packet.time_unix_usec;
+            sub.system_time_offset = AP_HAL:: millis();
+            hal.util->set_system_clock(packet.time_unix_usec);
+            // update signing timestamp
+            GCS_MAVLINK::update_signing_timestamp(packet.time_unix_usec);
+            sub.ap.system_time_set = true;
+            sub.Log_Write_Event(DATA_SYSTEM_TIME_SET);
+        }
+        break;
+    }
+
+    case MAVLINK_MSG_ID_STATUSTEXT: {
+        mavlink_statustext_t packet;
+        mavlink_msg_statustext_decode(msg, &packet);
+        sub.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Got Msg %s", packet.text);
         break;
     }
 

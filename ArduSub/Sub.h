@@ -129,6 +129,10 @@ public:
     void loop() override;
 
 private:
+
+    uint64_t system_time;
+    uint32_t system_time_offset;
+
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
 
