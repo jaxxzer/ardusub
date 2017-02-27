@@ -31,6 +31,9 @@ void Sub::acro_run()
     float target_roll, target_pitch;
     float target_yaw_rate;
 
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed() || !motors.get_interlock()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -80,11 +83,10 @@ void Sub::acro_run()
         attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         pos_control.set_alt_target(inertial_nav.get_altitude());
-        pos_control.set_desired_velocity_z(0);
+        pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
     } else {
         pos_control.update_z_controller();
     }
-
 
     //control_in is range -1000-1000
     //radio_in is raw pwm value
