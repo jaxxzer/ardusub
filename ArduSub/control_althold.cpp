@@ -88,7 +88,7 @@ void Sub::althold_run()
         // reset z targets to current values
         //pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         pos_control.set_alt_target(inertial_nav.get_altitude());
-        pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+        pos_control.set_desired_velocity_z(0);
     } else { // hold z
 
         if (ap.at_bottom) {
