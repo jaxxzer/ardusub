@@ -86,7 +86,7 @@ void Sub::althold_run()
         // output pilot's throttle
         attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
         // reset z targets to current values
-        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+        //pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         pos_control.set_alt_target(inertial_nav.get_altitude());
         pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
     } else { // hold z
