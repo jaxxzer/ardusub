@@ -32,21 +32,21 @@ void Sub::failsafe_battery_event(void)
 void Sub::failsafe_manual_control_check()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    uint32_t tnow = AP_HAL::millis();
-
-    // Require at least 2Hz update
-    if (tnow > failsafe.last_manual_control_ms + 500) {
-        if (!failsafe.manual_control) {
-            failsafe.manual_control = true;
-            set_neutral_controls();
-            init_disarm_motors();
-            Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
-            gcs_send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
-        }
-        return;
-    }
-
-    failsafe.manual_control = false;
+//    uint32_t tnow = AP_HAL::millis();
+//
+//    // Require at least 2Hz update
+//    if (tnow > failsafe.last_manual_control_ms + 500) {
+//        if (!failsafe.manual_control) {
+//            failsafe.manual_control = true;
+//            set_neutral_controls();
+//            init_disarm_motors();
+//            Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
+//            gcs_send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
+//        }
+//        return;
+//    }
+//
+//    failsafe.manual_control = false;
 #endif
 }
 

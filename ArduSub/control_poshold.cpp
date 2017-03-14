@@ -5,7 +5,7 @@
 #include "Sub.h"
 
 #if POSHOLD_ENABLED == ENABLED
-
+static uint32_t last_msg_ms = 0;
 // poshold_init - initialise PosHold controller
 bool Sub::poshold_init(bool ignore_checks)
 {
@@ -61,14 +61,20 @@ void Sub::poshold_run()
 
     ///////////////////////
     // update xy outputs //
-    int16_t pilot_lateral = channel_lateral->norm_input();
-    int16_t pilot_forward = channel_forward->norm_input();
+    float pilot_lateral = channel_lateral->norm_input();
+    float pilot_forward = channel_forward->norm_input();
 
     float lateral_out = 0;
     float forward_out = 0;
 
     // Allow pilot to reposition the sub
-    if (pilot_lateral != 0 || pilot_forward != 0) {
+    if (fabsf(pilot_lateral) > 0.1 || fabsf(pilot_forward) > 0.1) {
+
+        if (AP_HAL::millis() > last_msg_ms + 5000) {
+            last_msg_ms = AP_HAL::millis();
+            gcs_send_text(MAV_SEVERITY_CRITICAL, "reposition");
+        }
+
         lateral_out = pilot_lateral;
         forward_out = pilot_forward;
         wp_nav.init_loiter_target(); // initialize target to current position after repositioning
