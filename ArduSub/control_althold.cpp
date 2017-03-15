@@ -4,7 +4,7 @@
 /*
  * control_althold.pde - init and run calls for althold, flight mode
  */
-
+static uint32_t last_m_ms = 0;
 // althold_init - initialise althold controller
 bool Sub::althold_init(bool ignore_checks)
 {
@@ -63,6 +63,11 @@ void Sub::althold_run()
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+
+    if (AP_HAL::millis() > last_m_ms + 500) {
+        last_m_ms = AP_HAL::millis();
+        printf("\nchan: %d\tcmb_rate: %0.2f\tat_bottom: %b", channel_throttle->get_control_in(), target_climb_rate, ap.at_bottom);
+    }
 
     // call attitude controller
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input

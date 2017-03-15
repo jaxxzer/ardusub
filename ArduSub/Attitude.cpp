@@ -96,11 +96,6 @@ float Sub::get_look_ahead_yaw()
 // without any deadzone at the bottom
 float Sub::get_pilot_desired_climb_rate(float throttle_control)
 {
-    // throttle failsafe check
-    if (failsafe.manual_control) {
-        return 0.0f;
-    }
-
     float desired_rate = 0.0f;
     float mid_stick = channel_throttle->get_control_mid();
     float deadband_top = mid_stick + g.throttle_deadzone;
